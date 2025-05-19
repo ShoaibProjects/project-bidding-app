@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  password  String
+  role      Role
+  bids      Bid[]
+  projects  Project[] @relation("BuyerProjects")
+  ratings   Rating[]  @relation("BuyerRatings") // Buyers who rated sellers
+  receivedRatings Rating[] @relation("SellerRatings") // Sellers being rated
+  rating    Float? // Average rating for sellers
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  title          String
+  description    String
+  budget         String
+  deadline       DateTime
+  status         ProjectStatus  @default(PENDING)
+  buyerId        String
+  buyer          User           @relation("BuyerProjects", fields: [buyerId], references: [id])
+  bids           Bid[]
+  deliverable    Deliverable?
+  selectedBidId  String?         @unique // New field to track selected bid
+  selectedBid    Bid?           @relation("SelectedBid", fields: [selectedBidId], references: [id])
+}
+
+model Bid {
+  id           String   @id @default(cuid())
+  sellerName   String
+  amount       Int
+  durationDays Int
+  message      String
+  projectId    String
+  sellerId     String
+  project      Project  @relation(fields: [projectId], references: [id])
+  seller       User     @relation(fields: [sellerId], references: [id])
+  selectedFor  Project? @relation("SelectedBid") // Reverse relation from Project
+}
+
+model Deliverable {
+  id         String   @id @default(cuid())
+  fileUrl    String
+  projectId  String   @unique
+  project    Project  @relation(fields: [projectId], references: [id])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  value     Int      // e.g., 1 to 5
+  comment   String?
+  buyerId   String
+  sellerId  String
+  buyer     User     @relation("BuyerRatings", fields: [buyerId], references: [id])
+  seller    User     @relation("SellerRatings", fields: [sellerId], references: [id])
+}
+
+enum Role {
+  BUYER
+  SELLER
+}
+
+enum ProjectStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
