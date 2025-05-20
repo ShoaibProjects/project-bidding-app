@@ -29,7 +29,7 @@ try {
 // Middleware setup
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://your-frontend-domain.vercel.app' 
+    ? process.env.FRONTEND_URL || 'https://project-bidding-app.vercel.app' 
     : 'http://localhost:3000',
   credentials: true,
 }));
