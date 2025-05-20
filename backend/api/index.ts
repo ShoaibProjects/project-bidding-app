@@ -1,7 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import path from 'path';
-import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import projectRoutes from '../src/routes/project.routes';
 import bidRoutes from '../src/routes/bid.routes';
@@ -15,16 +13,6 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-// Create uploads directory if it doesn't exist
-// const __dirname = path.resolve();
-const uploadsDir = path.join(__dirname, 'uploads');
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-} catch (error) {
-  console.error('Error creating uploads directory:', error);
-}
 
 // Middleware setup
 app.use(cors({
@@ -36,10 +24,6 @@ app.use(cors({
 
 app.use(express.json());
 
-
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/uploads', express.static(uploadsDir));
-}
 
 // Test database connection
 async function testDbConnection() {
