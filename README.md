@@ -34,6 +34,9 @@ A full-stack web application where Buyers can post projects and Sellers can plac
 
 ---
 
-## Deployement
+## 🌍 Deployment
 - Link:- https://project-bidding-app.vercel.app/
 
+## 📬 Contact / Credits
+- Built by Shoaib Akhtar
+- For assignment/project/demo purposes.
