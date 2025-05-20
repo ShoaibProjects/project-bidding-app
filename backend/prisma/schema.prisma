@@ -30,8 +30,9 @@ model Project {
   buyer          User           @relation("BuyerProjects", fields: [buyerId], references: [id])
   bids           Bid[]
   deliverable    Deliverable?
-  selectedBidId  String?         @unique // New field to track selected bid
+  selectedBidId  String?        @unique // New field to track selected bid
   selectedBid    Bid?           @relation("SelectedBid", fields: [selectedBidId], references: [id])
+  rating         Rating?        
 }
 
 model Bid {
@@ -60,6 +61,8 @@ model Rating {
   comment   String?
   buyerId   String
   sellerId  String
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id])
   buyer     User     @relation("BuyerRatings", fields: [buyerId], references: [id])
   seller    User     @relation("SellerRatings", fields: [sellerId], references: [id])
 }

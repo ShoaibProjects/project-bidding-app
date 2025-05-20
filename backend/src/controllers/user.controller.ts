@@ -1,58 +1,94 @@
-import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
-import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "devsecret"; // use env var in real project
+/**
+ * Rate a seller for a completed project.
+ * 
+ * This endpoint allows a buyer to rate a seller (1–5 stars) and leave an optional comment,
+ * but only if the buyer owns the project and the seller was selected for that project.
+ * The seller’s average rating is recalculated and updated.
+ * 
+ * Expects: { value, comment?, projectId } in request body.
+ * Requires authenticated user (buyer) with userId attached to `req.user`.
+ */
+export const rateSeller = async (req: Request, res: Response) => {
+  const { value, comment, projectId } = req.body;
+  const buyerId = (req as any).user.userId; // Assumes auth middleware sets `user` on request
 
-export const createUser = async (req: Request, res: Response) => {
+  // Validate required inputs
+  if (!value || !projectId) {
+    return res.status(400).json({ error: "Rating value and projectId are required." });
+  }
+
+  // Validate rating range
+  if (value < 1 || value > 5) {
+    return res.status(400).json({ error: "Rating value must be between 1 and 5." });
+  }
+
   try {
-    const { email, password, role } = req.body;
-
-    if (!email || !password || !role) {
-      return res.status(400).json({ error: "Email, password, and role are required." });
-    }
-
-    if (!["BUYER", "SELLER"].includes(role)) {
-      return res.status(400).json({ error: "Invalid role." });
-    }
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ error: "User with this email already exists." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: { email, password: hashedPassword, role },
+    // Fetch the project with selected bid
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        selectedBid: true
+      }
     });
 
-    res.status(201).json({ message: "User created successfully.", user: { email: user.email, role: user.role, id: user.id } });
-  } catch (error) {
-    console.error("CreateUser Error:", error);
+    // Ensure project exists
+    if (!project) {
+      return res.status(404).json({ error: "Project not found." });
+    }
+
+    // Ensure the authenticated user is the buyer
+    if (project.buyerId !== buyerId) {
+      return res.status(403).json({ error: "You are not authorized to rate this project." });
+    }
+
+    // Ensure a seller was selected for this project
+    if (!project.selectedBid) {
+      return res.status(400).json({ error: "Seller not selected for this project." });
+    }
+
+    const sellerId = project.selectedBid.sellerId;
+
+    // Prevent duplicate ratings for the same project by the same buyer
+    const existing = await prisma.rating.findFirst({
+      where: { buyerId, sellerId, projectId }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: "You have already rated this seller for this project." });
+    }
+
+    // Save new rating to the database
+    await prisma.rating.create({
+      data: {
+        value,
+        comment,
+        buyerId,
+        sellerId,
+        projectId
+      }
+    });
+
+    // Fetch all ratings for the seller to recalculate average
+    const ratings = await prisma.rating.findMany({
+      where: { sellerId }
+    });
+
+    const average = ratings.reduce((acc, r) => acc + r.value, 0) / ratings.length;
+
+    // Update seller's average rating on their profile
+    await prisma.user.update({
+      where: { id: sellerId },
+      data: {
+        rating: average
+      }
+    });
+
+    return res.status(201).json({ message: "Seller rated successfully." });
+  } catch (err) {
+    console.error("Rate Seller Error:", err);
     res.status(500).json({ error: "Internal server error." });
   }
-};
-
-export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return res.status(401).json({ error: "Invalid email or password." });
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(401).json({ error: "Invalid email or password." });
-  }
-
-  const token = jwt.sign(
-    { userId: user.id, role: user.role },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  res.status(200).json({ token, user: { email: user.email, role: user.role, id: user.id } });
 };

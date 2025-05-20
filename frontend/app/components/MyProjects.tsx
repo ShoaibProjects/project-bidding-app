@@ -1,13 +1,25 @@
-'use client'
-import { useEffect, useState } from "react";
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   selectSeller,
   getProjectsByBuyerId,
-  completeProject
-} from "../services/projectService";
-import { Project } from "../types";
-import { useUserStore } from "@/store/userStore";
+  completeProject,
+} from '../services/projectService';
+import { rateSeller } from '../services/userService';
+import { Project } from '../types';
+import { useUserStore } from '@/store/userStore';
+import { ExternalLink } from 'lucide-react';
 
+/**
+ * Component to display and manage projects for the logged-in buyer.
+ * Allows selecting sellers, marking projects as completed, and rating sellers.
+ *
+ * @param {object} props - Component props
+ * @param {boolean} props.toRefresh - Boolean to trigger refresh of project list
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} [props.setToRefresh] - Setter to toggle refresh state
+ * @returns JSX.Element
+ */
 export default function MyProjects({
   toRefresh,
   setToRefresh,
@@ -15,115 +27,271 @@ export default function MyProjects({
   toRefresh: boolean;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  // State to store fetched projects
   const [projects, setProjects] = useState<Project[]>([]);
+  // Loading state during fetching
+  const [loading, setLoading] = useState(false);
+  // Track submitting state per project (for async actions like select, complete, rate)
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+  // Store rating inputs per project
+  const [ratingInputs, setRatingInputs] = useState<Record<string, number>>({});
+  // Store rating comments per project
+  const [ratingComments, setRatingComments] = useState<Record<string, string>>({});
+  // Get logged-in user info from store
   const { user } = useUserStore();
 
+  // Fetch projects on user id or toRefresh change
   useEffect(() => {
-    if (user?.id) {
-      fetchProjects(user.id);
-    }
+    if (user?.id) fetchProjects(user.id);
   }, [user?.id, toRefresh]);
 
+  /**
+   * Fetch projects for a given buyer id
+   * @param {string} buyerId - ID of the buyer user
+   */
   const fetchProjects = async (buyerId: string) => {
-    const res = await getProjectsByBuyerId(buyerId);
-    setProjects(res.data);
-  };
-
-  const handleSelect = async (projectId: string, bidId: string) => {
-    await selectSeller(projectId, bidId);
-    setToRefresh?.(!toRefresh);
-    alert("Seller selected!");
-  };
-
-  const handleComplete = async (projectId: string) => {
     try {
-      await completeProject(projectId);
-      setToRefresh?.(!toRefresh);
-      alert("Project marked as completed!");
+      setLoading(true);
+      const res = await getProjectsByBuyerId(buyerId);
+      setProjects(res.data);
     } catch (err) {
-      console.error("Error completing project:", err);
-      alert("Failed to mark project as completed.");
+      console.error('Failed to fetch projects:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  /**
+   * Handle selecting a seller's bid for a project
+   * @param {string} projectId - ID of the project
+   * @param {string} bidId - ID of the bid to select
+   */
+  const handleSelect = async (projectId: string, bidId: string) => {
+    try {
+      setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+      await selectSeller(projectId, bidId);
+      alert('Seller selected!');
+      setToRefresh?.((prev) => !prev);
+    } catch (err) {
+      alert('Failed to select seller.');
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  /**
+   * Handle marking a project as completed
+   * @param {string} projectId - ID of the project to mark complete
+   */
+  const handleComplete = async (projectId: string) => {
+    try {
+      setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+      await completeProject(projectId);
+      alert('Project marked as completed!');
+      setToRefresh?.((prev) => !prev);
+    } catch (err) {
+      alert('Failed to mark as completed.');
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  /**
+   * Handle submitting a rating for a completed project
+   * @param {string} projectId - ID of the project being rated
+   */
+  const handleRatingSubmit = async (projectId: string) => {
+    const value = ratingInputs[projectId];
+    const comment = ratingComments[projectId] || '';
+
+    // Validate rating value
+    if (!value || value < 1 || value > 5) {
+      alert('Please enter a rating between 1 and 5.');
+      return;
+    }
+
+    try {
+      setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+      await rateSeller({ value, comment, projectId });
+      alert('Rating submitted!');
+      setToRefresh?.((prev) => !prev);
+    } catch (err) {
+      alert('Failed to submit rating.');
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  /**
+   * Format ISO date string to a more readable local string
+   * @param {string} date - ISO date string
+   * @returns {string} Localized date string
+   */
+  const formatDate = (date: string) => new Date(date).toLocaleString();
+
+  // Show loading text if fetching projects
+  if (loading) return <p className="mt-4 text-gray-600">Loading projects...</p>;
+
+  // Show message if no projects are available
+  if (!projects.length) return <p className="mt-4 text-gray-600">No projects yet.</p>;
+
+  // Main JSX rendering projects and actions
   return (
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">My Projects</h2>
-      {projects.map((project) => (
-        <div key={project.id} className="border p-4 mb-4 rounded shadow">
-          <h3 className="font-bold">{project.title}</h3>
-          <p>{project.description}</p>
-          <p><strong>Budget:</strong> {project.budget}</p>
-          <p><strong>Deadline:</strong> {new Date(project.deadline).toLocaleString()}</p>
-          <p><strong>Status:</strong> {project.status}</p>
 
-          {project.deliverable ? (
-            <>
-              <div>
-                <p className="text-green-600 font-semibold">Deliverable Available</p>
+      {projects.map((project) => {
+        const isSubmitting = submitting[project.id] || false;
+
+        return (
+          <div key={project.id} className="border p-4 mb-6 rounded-lg shadow-sm bg-white">
+            <div className="mb-2">
+              <h3 className="text-lg font-bold">{project.title}</h3>
+              <p className="text-gray-700">{project.description}</p>
+              <p><strong>Budget:</strong> ${project.budget}</p>
+              <p><strong>Deadline:</strong> {formatDate(project.deadline)}</p>
+              <p><strong>Status:</strong> {project.status}</p>
+            </div>
+
+            {/* Deliverable section */}
+            {project.deliverable ? (
+              <div className="mt-2 flex flex-col">
+                <p className="text-green-600 font-medium">Deliverable Uploaded</p>
                 <a
                   href={project.deliverable.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 underline"
+                  className="text-blue-600 underline hover:text-blue-800 flex font-bold"
                 >
-                  View File
+                  View File <ExternalLink size={12} />
                 </a>
-              </div>
-              {project.status !== "COMPLETED" && (
-                <div className="mt-2">
+                {/* Button to mark project completed if not already completed */}
+                {project.status !== 'COMPLETED' && (
                   <button
-                    className="bg-green-600 text-white px-3 py-1 rounded"
                     onClick={() => handleComplete(project.id)}
+                    disabled={isSubmitting}
+                    className="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
                   >
-                    Mark as Completed
+                    {isSubmitting ? 'Processing...' : 'Mark as Completed'}
                   </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-500">Deliverable not yet uploaded</p>
-          )}
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 mt-2">Deliverable not yet uploaded</p>
+            )}
 
-          {project.bids.length > 0 && (
-            <>
-              <div className="mt-2">
+            {/* Display bids if any and no seller selected yet */}
+            {project.bids.length > 0 && !project.selectedBid && (
+              <div className="mt-4">
                 <h4 className="font-medium">Bids</h4>
                 <ul>
                   {project.bids.map((bid) => (
                     <li
                       key={bid.id}
-                      className="border p-2 my-1 flex justify-between items-center"
+                      className="flex justify-between items-center border px-3 py-2 rounded mb-2"
                     >
                       <span>
                         {bid.sellerName} - ${bid.amount} in {bid.durationDays} days
                       </span>
-                      {project.status !== "IN_PROGRESS" && (
-                        <button
-                          className="bg-blue-600 text-white px-2 py-1 rounded"
-                          onClick={() => handleSelect(project.id, bid.id)}
-                        >
-                          Select
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleSelect(project.id, bid.id)}
+                        disabled={isSubmitting}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
+                      >
+                        {isSubmitting ? 'Selecting...' : 'Select'}
+                      </button>
                     </li>
                   ))}
                 </ul>
               </div>
-              {project.selectedBid && (
-                <div>
-                  <h4><strong>Selected Bid</strong></h4>
+            )}
+
+            {/* Show selected bid details */}
+            {project.selectedBid && (
+              <div className="mt-4">
+                <h4 className="font-medium">Selected Bid</h4>
+                <p className="text-gray-800">
+                  {project.selectedBid.sellerName} - ${project.selectedBid.amount} in{' '}
+                  {project.selectedBid.durationDays} days
+                </p>
+              </div>
+            )}
+
+            {/* Rating section for completed projects */}
+            {project.status === 'COMPLETED' && (
+              <div className="mt-4">
+                <h4 className="font-medium">Ratings</h4>
+                {project.rating ? (
                   <div>
-                    <span>
-                      {project.selectedBid.sellerName} - ${project.selectedBid.amount} in {project.selectedBid.durationDays} days
-                    </span>
+                    <p className="flex items-center">
+                      <strong className="mr-2">Rating:</strong>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className={`text-xl ${
+                            (project.rating?.value ?? 0) >= star
+                              ? 'text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </p>
+                    {project.rating?.comment && (
+                      <p className="italic mt-1">"{project.rating.comment}"</p>
+                    )}
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ))}
+                ) : (
+                  <div className="space-y-2">
+                    <span className="text-sm">Wanna rate this project?</span>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          onClick={() =>
+                            setRatingInputs((prev) => ({ ...prev, [project.id]: star }))
+                          }
+                          className={`cursor-pointer text-2xl ${
+                            (ratingInputs[project.id] || 0) >= star
+                              ? 'text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+
+                    <label className="block">
+                      <span className="text-sm">Comment (optional)</span>
+                      <textarea
+                        rows={2}
+                        value={ratingComments[project.id] || ''}
+                        onChange={(e) =>
+                          setRatingComments((prev) => ({
+                            ...prev,
+                            [project.id]: e.target.value,
+                          }))
+                        }
+                        className="border rounded px-2 py-1 mt-1 w-full max-h-20 min-h-10"
+                      />
+                    </label>
+
+                    <button
+                      onClick={() => handleRatingSubmit(project.id)}
+                      disabled={isSubmitting}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

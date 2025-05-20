@@ -1,77 +1,88 @@
-// src/index.ts (or wherever your server entry is)
-import express from "express";
-import cors from "cors";
-import path from "path";
-import fs from "fs";
-import { PrismaClient } from "@prisma/client";
-import projectRoutes from "./routes/project.routes";
-import bidRoutes from "./routes/bid.routes";
-import userRoutes from "./routes/userRoutes";
-import authRoutes from "./routes/auth.routes";
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { PrismaClient } from '@prisma/client';
+import projectRoutes from './routes/project.routes';
+import bidRoutes from './routes/bid.routes';
+import userRoutes from './routes/userRoutes';
+import authRoutes from './routes/auth.routes';
 import dotenv from 'dotenv';
 
+// Load environment variables from .env file
 dotenv.config();
+
 const app = express();
-const PORT = process.env.PORT || 3001;
 const prisma = new PrismaClient();
 
-// Ensure uploads directory exists (defensive check)
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Create uploads directory if it doesn't exist
+const __dirname = path.resolve();
+const uploadsDir = path.join(__dirname, 'uploads');
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.error('Error creating uploads directory:', error);
 }
 
-// Middleware
-app.use(cors());
+// Middleware setup
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'https://your-frontend-domain.vercel.app' 
+    : 'http://localhost:3000',
+  credentials: true,
+}));
+
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir)); // ✅ serve uploaded files
+
+// Serve static files from uploads folder if not in production
+// In production, you'll likely need to use a storage service like S3
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(uploadsDir));
+}
 
 // Test database connection
 async function testDbConnection() {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    console.log("✅ Database connection successful");
+    console.log('✅ Database connection successful');
     return true;
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error('❌ Database connection failed:', error);
     return false;
   }
 }
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/bids", bidRoutes);
-app.use("/api/users", userRoutes);
+// Simple health check endpoint
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'OK', message: 'API is running' });
+});
 
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Register API route handlers
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/bids', bidRoutes);
+app.use('/api/users', userRoutes);
+
+// Global error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-// Start server after checking database connection
-async function startServer() {
-  const isDbConnected = await testDbConnection();
-  
+// Test the DB connection on startup
+testDbConnection().catch(error => {
+  console.error('Failed to test database connection:', error);
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    if (isDbConnected) {
-      console.log(`Connected to PostgreSQL database at ${process.env.DATABASE_URL?.split("@")[1]?.split("/")[0] || "unknown host"}`);
-    } else {
-      console.log("Warning: Server started but database connection failed");
-    }
   });
 }
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  console.log("Shutting down server...");
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-startServer().catch(error => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
-});
+// Export the Express API for Vercel
+export default app;
