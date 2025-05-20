@@ -28,9 +28,9 @@ try {
 
 // Middleware setup
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://project-bidding-app.vercel.app' 
-    : 'http://localhost:3000',
+  origin:  
+    ['https://project-bidding-app.vercel.app' 
+    ,'http://localhost:3000'],
   credentials: true,
 }));
 
