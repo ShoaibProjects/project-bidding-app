@@ -42,7 +42,7 @@ export default function Login() {
       console.log("API base:", process.env.NEXT_PUBLIC_API_BASE_URL);
 
       const res = await login(form);
-      console.log(res)
+
       setUser({
         email: res.data.user.email,
         id: res.data.user.id,
