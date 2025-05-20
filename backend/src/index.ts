@@ -16,7 +16,7 @@ const app = express();
 const prisma = new PrismaClient();
 
 // Create uploads directory if it doesn't exist
-const __dirname = path.resolve();
+// const __dirname = path.resolve();
 const uploadsDir = path.join(__dirname, 'uploads');
 try {
   if (!fs.existsSync(uploadsDir)) {
@@ -29,7 +29,7 @@ try {
 // Middleware setup
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://project-bidding-app.vercel.app' 
+    ? 'https://project-bidding-app.vercel.app' 
     : 'http://localhost:3000',
   credentials: true,
 }));
@@ -61,10 +61,7 @@ app.get('/api/health', (_req, res) => {
 
 // Register API route handlers
 // app.use('/api/auth', authRoutes);/
-app.use('/api/auth', (_req,res)=>{
-  console.log("ok")
-  res.send("okkkk")
-});
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/bids', bidRoutes);
 app.use('/api/users', userRoutes);
