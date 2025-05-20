@@ -3,10 +3,10 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
-import projectRoutes from './routes/project.routes';
-import bidRoutes from './routes/bid.routes';
-import userRoutes from './routes/userRoutes';
-import authRoutes from './routes/auth.routes';
+import projectRoutes from '../src/routes/project.routes';
+import bidRoutes from '../src/routes/bid.routes';
+import userRoutes from '../src/routes/userRoutes';
+import authRoutes from '../src/routes/auth.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
