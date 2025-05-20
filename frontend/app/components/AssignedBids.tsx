@@ -52,7 +52,7 @@ export default function AssignedProjectList({
       const res = await getSelectedProjectsForSeller(sellerId);
       setProjects(res.data);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch assigned projects", err);
       setError("Failed to load assigned projects.");
     } finally {
@@ -149,7 +149,7 @@ export default function AssignedProjectList({
                 </p>
                 {/* Optional rating comment */}
                 {project.rating?.comment && (
-                  <p className="italic mt-1">"{project.rating.comment}"</p>
+                  <p className="italic mt-1">&quot;{project.rating.comment}&quot;</p>
                 )}
               </div>
             </div>

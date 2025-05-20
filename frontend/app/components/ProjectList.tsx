@@ -16,6 +16,14 @@ import { BadgeCheck, ClipboardList } from "lucide-react";
  *  - toRefresh: boolean flag to trigger re-fetching projects (e.g. after placing a bid)
  *  - setToRefresh?: optional setter function to toggle toRefresh flag in parent component
  */
+
+type BidInput = {
+  amount: number;
+  durationDays: number;
+  message: string;
+};
+
+
 export default function ProjectList({
   toRefresh,
   setToRefresh,
@@ -26,7 +34,7 @@ export default function ProjectList({
   // State to hold the list of projects fetched from backend
   const [projects, setProjects] = useState<Project[]>([]);
   // State to track bid form inputs for each project by project ID
-  const [bidInputs, setBidInputs] = useState<Record<string, any>>({});
+  const [bidInputs, setBidInputs] = useState<Record<string, BidInput>>({});
   // Get the currently logged-in user from the global store
   const { user } = useUserStore();
 
@@ -63,8 +71,8 @@ export default function ProjectList({
       await placeBid({
         ...bid,
         projectId,
-        sellerId: user?.id,
-        sellerName: user?.email,
+        sellerId: user?.id? user.id : "",
+        sellerName: user?.email? user.email : "",
       });
       // Toggle toRefresh flag to notify parent to refresh data (if setter provided)
       setToRefresh?.(!toRefresh);
@@ -187,7 +195,7 @@ export default function ProjectList({
                         </span>
                       </div>
                       <span className="text-sm italic text-gray-500">
-                        "{bid.message}"
+                        &quot;{bid.message}&quot;
                       </span>
                     </li>
                   ))}

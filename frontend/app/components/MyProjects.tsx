@@ -73,6 +73,7 @@ export default function MyProjects({
       alert('Seller selected!');
       setToRefresh?.((prev) => !prev);
     } catch (err) {
+      console.log(err)
       alert('Failed to select seller.');
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
@@ -90,6 +91,7 @@ export default function MyProjects({
       alert('Project marked as completed!');
       setToRefresh?.((prev) => !prev);
     } catch (err) {
+      console.log(err)
       alert('Failed to mark as completed.');
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
@@ -116,6 +118,7 @@ export default function MyProjects({
       alert('Rating submitted!');
       setToRefresh?.((prev) => !prev);
     } catch (err) {
+      console.log(err)
       alert('Failed to submit rating.');
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
@@ -239,7 +242,7 @@ export default function MyProjects({
                       ))}
                     </p>
                     {project.rating?.comment && (
-                      <p className="italic mt-1">"{project.rating.comment}"</p>
+                      <p className="italic mt-1">&quot;{project.rating.comment}&quot;</p>
                     )}
                   </div>
                 ) : (
