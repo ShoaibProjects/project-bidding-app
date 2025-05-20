@@ -8,10 +8,10 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const client_1 = require("@prisma/client");
-const project_routes_1 = __importDefault(require("../routes/project.routes"));
-const bid_routes_1 = __importDefault(require("../routes/bid.routes"));
-const userRoutes_1 = __importDefault(require("../routes/userRoutes"));
-const auth_routes_1 = __importDefault(require("../routes/auth.routes"));
+const project_routes_1 = __importDefault(require("../src/routes/project.routes"));
+const bid_routes_1 = __importDefault(require("../src/routes/bid.routes"));
+const userRoutes_1 = __importDefault(require("../src/routes/userRoutes"));
+const auth_routes_1 = __importDefault(require("../src/routes/auth.routes"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables from .env file
 dotenv_1.default.config();

@@ -3,10 +3,10 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
-import projectRoutes from '../routes/project.routes';
-import bidRoutes from '../routes/bid.routes';
-import userRoutes from '../routes/userRoutes';
-import authRoutes from '../routes/auth.routes';
+import projectRoutes from '../src/routes/project.routes';
+import bidRoutes from '../src/routes/bid.routes';
+import userRoutes from '../src/routes/userRoutes';
+import authRoutes from '../src/routes/auth.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -36,8 +36,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve static files from uploads folder if not in production
-// In production, you'll likely need to use a storage service like S3
+
 if (process.env.NODE_ENV !== 'production') {
   app.use('/uploads', express.static(uploadsDir));
 }

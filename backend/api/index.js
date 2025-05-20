@@ -8,17 +8,17 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const client_1 = require("@prisma/client");
-const project_routes_1 = __importDefault(require("./routes/project.routes"));
-const bid_routes_1 = __importDefault(require("./routes/bid.routes"));
-const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
-const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const project_routes_1 = __importDefault(require("../src/routes/project.routes"));
+const bid_routes_1 = __importDefault(require("../src/routes/bid.routes"));
+const userRoutes_1 = __importDefault(require("../src/routes/userRoutes"));
+const auth_routes_1 = __importDefault(require("../src/routes/auth.routes"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables from .env file
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 // Create uploads directory if it doesn't exist
-const __dirname = path_1.default.resolve();
+// const __dirname = path.resolve();
 const uploadsDir = path_1.default.join(__dirname, 'uploads');
 try {
     if (!fs_1.default.existsSync(uploadsDir)) {
@@ -30,9 +30,8 @@ catch (error) {
 }
 // Middleware setup
 app.use((0, cors_1.default)({
-    origin: process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_URL || 'https://your-frontend-domain.vercel.app'
-        : 'http://localhost:3000',
+    origin: ['https://project-bidding-app.vercel.app',
+        'http://localhost:3000'],
     credentials: true,
 }));
 app.use(express_1.default.json());
@@ -58,6 +57,7 @@ app.get('/api/health', (_req, res) => {
     res.status(200).json({ status: 'OK', message: 'API is running' });
 });
 // Register API route handlers
+// app.use('/api/auth', authRoutes);/
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/projects', project_routes_1.default);
 app.use('/api/bids', bid_routes_1.default);
