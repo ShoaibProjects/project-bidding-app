@@ -60,7 +60,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Register API route handlers
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);/
+app.use('/api/auth', (_req,res)=>{
+  console.log("ok")
+  res.send("okkkk")
+});
 app.use('/api/projects', projectRoutes);
 app.use('/api/bids', bidRoutes);
 app.use('/api/users', userRoutes);
