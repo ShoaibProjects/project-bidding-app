@@ -32,11 +32,12 @@ A full-stack web application where Buyers can post projects and Sellers can plac
 | Auth      | Firebase Google Authentication      |
 | Hosting   | Vercel (Frontend + Backend)         |
 
----
-
 ## 🌍 Deployment
 - Link:- https://project-bidding-app.vercel.app/
 
 ## 📬 Contact / Credits
 - Built by Shoaib Akhtar
 - For assignment/project/demo purposes.
+- 
+---
+
