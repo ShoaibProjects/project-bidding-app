@@ -6,6 +6,13 @@ import { placeBid } from "../services/bidService";
 import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
 import { BadgeCheck, ClipboardList } from "lucide-react";
+import { getSortableList } from "../utils/getSortableList";
+
+// Define possible sorting options as a TypeScript union type
+type SortOption =
+  | "budget"
+  | "deadline"
+  | "recency";
 
 /**
  * ProjectList Component
@@ -33,6 +40,14 @@ export default function ProjectList({
 }) {
   // State to hold the list of projects fetched from backend
   const [projects, setProjects] = useState<Project[]>([]);
+
+  // State to hold the selected sorting option, default is 'recency'
+  const [sortOption, setSortOption] = useState<SortOption>("recency");
+
+  // Use custom hook to get the sorted projects based on the selected sort option
+  // The hook handles sorting logic internally
+  const sortedProjects = getSortableList(projects, sortOption, "project");
+
   // State to track bid form inputs for each project by project ID
   const [bidInputs, setBidInputs] = useState<Record<string, BidInput>>({});
   // Get the currently logged-in user from the global store
@@ -84,14 +99,62 @@ export default function ProjectList({
     }
   };
 
+      /**
+   * SortSelector Component
+   *
+   * Renders a dropdown/select input to choose the sorting criteria.
+   * Calls `onChange` callback with the selected sort option on user change.
+   *
+   * Props:
+   * - selected: current selected sort option
+   * - onChange: function to call with new sort option
+   */
+  const SortSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: SortOption;
+  onChange: (value: SortOption) => void;
+}) => {
+  // Map of sort option values to user-friendly labels
+  const sortOptions: Record<SortOption, string> = {
+    budget: "Budget (High → Low)",
+    deadline: "Deadline (Soonest First)",
+    recency: "Recency (Newest First)",
+  };
+
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <label htmlFor="sort" className="text-sm font-medium">
+        Sort by:
+      </label>
+      <select
+        id="sort"
+        value={selected}
+        onChange={(e) => onChange(e.target.value as SortOption)}
+        className="border border-gray-300 rounded px-3 py-1 text-sm"
+      >
+        {Object.entries(sortOptions).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
   return (
     <div className="mt-10">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <ClipboardList className="text-primary" /> Open Projects
       </h2>
 
+      {/* Sort selector dropdown */}
+      <SortSelector selected={sortOption} onChange={setSortOption} />
+
       <div className="grid gap-6">
-        {projects.map((project) => (
+        {sortedProjects.map((project) => (
           <div
             key={project.id}
             className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"

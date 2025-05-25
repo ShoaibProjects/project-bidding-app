@@ -11,6 +11,21 @@ import { rateSeller } from "../services/userService";
 import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
 import { ExternalLink } from "lucide-react";
+import { getSortableList } from "../utils/getSortableList";
+
+// Define possible sorting options as a TypeScript union type
+type ProjectSortOption =
+  | "budget"
+  | "deadline"
+  | "recency"
+  | "status"
+  | "alphabetical";
+
+ type BidSortOption =
+  | "rating"
+  | "budget"
+  | "deadline"
+  | "recency"; 
 
 /**
  * Component to display and manage projects for the logged-in buyer.
@@ -30,6 +45,17 @@ export default function MyProjects({
 }) {
   // State to store fetched projects
   const [projects, setProjects] = useState<Project[]>([]);
+
+  // State to hold the selected sorting option, default is 'recency'
+  const [projectSortOption, setProjectSortOption] = useState<ProjectSortOption>("recency");
+
+  // State to hold the selected sorting option, default is 'recency'
+  const [bidSortOption, setBidSortOption] = useState<BidSortOption>("recency");
+
+  // Use custom hook to get the sorted projects based on the selected sort option
+  // The hook handles sorting logic internally
+  const sortedProjects = getSortableList(projects, projectSortOption, "project");
+
   // Loading state during fetching
   const [loading, setLoading] = useState(false);
   // Track submitting state per project (for async actions like select, complete, rate)
@@ -63,6 +89,99 @@ export default function MyProjects({
       setLoading(false);
     }
   };
+
+      /**
+   * SortSelector Component
+   *
+   * Renders a dropdown/select input to choose the sorting criteria.
+   * Calls `onChange` callback with the selected sort option on user change.
+   *
+   * Props:
+   * - selected: current selected sort option
+   * - onChange: function to call with new sort option
+   */
+  const ProjectSortSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: ProjectSortOption;
+  onChange: (value: ProjectSortOption) => void;
+}) => {
+  // Map of sort option values to user-friendly labels
+  const sortOptions: Record<ProjectSortOption, string> = {
+    budget: "Budget (High → Low)",
+    deadline: "Deadline (Soonest First)",
+    recency: "Recency (Newest First)",
+    status: "Status",
+    alphabetical: "Alphabetical (A → Z)",
+  };
+
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <label htmlFor="sort" className="text-sm font-medium">
+        Sort by:
+      </label>
+      <select
+        id="sort"
+        value={selected}
+        onChange={(e) => onChange(e.target.value as ProjectSortOption)}
+        className="border border-gray-300 rounded px-3 py-1 text-sm"
+      >
+        {Object.entries(sortOptions).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+      /**
+   * SortSelector Component
+   *
+   * Renders a dropdown/select input to choose the sorting criteria.
+   * Calls `onChange` callback with the selected sort option on user change.
+   *
+   * Props:
+   * - selected: current selected sort option
+   * - onChange: function to call with new sort option
+   */
+  const BidSortSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: BidSortOption;
+  onChange: (value: BidSortOption) => void;
+}) => {
+  // Map of sort option values to user-friendly labels
+  const sortOptions: Record<BidSortOption, string> = {
+    rating: "Ratings (of Seller)",
+    budget: "Budget (High → Low)",
+    deadline: "Deadline (Soonest First)",
+    recency: "Recency (Newest First)",
+  };
+
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <label htmlFor="sort" className="text-sm font-medium">
+        Sort by:
+      </label>
+      <select
+        id="sort"
+        value={selected}
+        onChange={(e) => onChange(e.target.value as BidSortOption)}
+        className="border border-gray-300 rounded px-3 py-1 text-sm"
+      >
+        {Object.entries(sortOptions).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
   /**
    * Handle selecting a seller's bid for a project
@@ -166,8 +285,13 @@ export default function MyProjects({
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">My Projects</h2>
 
-      {projects.map((project) => {
+      {/* Sort selector dropdown */}
+      <ProjectSortSelector selected={projectSortOption} onChange={setProjectSortOption} />
+
+      {sortedProjects.map((project) => {
         const isSubmitting = submitting[project.id] || false;
+
+        const sortedBids = getSortableList(project.bids || [], bidSortOption, "bid");
 
         return (
           <div
@@ -221,8 +345,10 @@ export default function MyProjects({
             {project.bids.length > 0 && !project.selectedBid && (
               <div className="mt-4">
                 <h4 className="font-medium">Bids</h4>
+                      {/* Show bid sort dropdown */}
+      <BidSortSelector selected={bidSortOption} onChange={setBidSortOption} />
                 <ul>
-                  {project.bids.map((bid) => (
+                  {sortedBids.map((bid) => (
                     <li
                       key={bid.id}
                       className="flex justify-between items-center border px-3 py-2 rounded mb-2"

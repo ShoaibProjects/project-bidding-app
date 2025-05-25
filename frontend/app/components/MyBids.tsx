@@ -5,6 +5,7 @@ import { getBidsBySeller } from "../services/bidService";
 import { Bid } from "../types";
 import { useUserStore } from "@/store/userStore";
 
+
 /**
  * MyBidsList Component
  * 
@@ -67,6 +68,8 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
           <p><strong>Budget:</strong> {bid.project?.budget}</p>
           <p><strong>Deadline:</strong> {bid.project?.deadline ? new Date(bid.project.deadline).toLocaleString() : "NA"}</p>
           <p><strong>Status:</strong> {bid.project?.status}</p>
+
+          {bid.project?.selectedBidId === bid.id && <p className="text-green-600 font-semibold">Got Selected</p>}
 
           <div className="mt-4 bg-gray-50 p-3 rounded border text-sm">
             <h4 className="font-semibold">Your Bid</h4>
