@@ -44,6 +44,7 @@ app.get('/api/health', (_req, res) => {
 
 // Register API route handlers
 
+
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/bids', bidRoutes);
