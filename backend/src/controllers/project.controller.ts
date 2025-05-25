@@ -125,6 +125,60 @@ export const selectSeller = async (req: Request, res: Response) => {
 };
 
 /**
+ * Allows a buyer to unselect a previously selected seller.
+ * Notifies the seller, resets the project status to PENDING, and clears selectedBidId.
+ */
+export const unselectSeller = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    // Get the current project with selectedBid
+    const currentProject = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        selectedBid: {
+          include: { seller: true },
+        },
+      },
+    });
+
+    if (!currentProject) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const selectedSellerEmail = currentProject.selectedBid?.seller?.email;
+
+    // Update the project: unselect seller
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status: "PENDING",
+        selectedBidId: null,
+      },
+    });
+
+    // Notify the previously selected seller if exists
+    if (selectedSellerEmail) {
+      await sendEmail(
+        selectedSellerEmail,
+        "You have been unselected",
+        `The buyer has unselected you from project: "${currentProject.title}". The project is now open for bidding again.`
+      );
+    }
+
+    res.json({
+      message: "Seller unselected successfully. Project is now open for bidding.",
+      project: updatedProject,
+    });
+  } catch (error) {
+    console.error("Error unselecting seller:", error);
+    res.status(500).json({ error: "Failed to unselect seller" });
+  }
+};
+
+
+
+/**
  * Marks a project as completed and sends notification emails to both buyer and seller.
  */
 export const completeProject = async (req: Request, res: Response) => {

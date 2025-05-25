@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   selectSeller,
   getProjectsByBuyerId,
   completeProject,
-} from '../services/projectService';
-import { rateSeller } from '../services/userService';
-import { Project } from '../types';
-import { useUserStore } from '@/store/userStore';
-import { ExternalLink } from 'lucide-react';
+  unselectSeller,
+} from "../services/projectService";
+import { rateSeller } from "../services/userService";
+import { Project } from "../types";
+import { useUserStore } from "@/store/userStore";
+import { ExternalLink } from "lucide-react";
 
 /**
  * Component to display and manage projects for the logged-in buyer.
@@ -36,7 +37,9 @@ export default function MyProjects({
   // Store rating inputs per project
   const [ratingInputs, setRatingInputs] = useState<Record<string, number>>({});
   // Store rating comments per project
-  const [ratingComments, setRatingComments] = useState<Record<string, string>>({});
+  const [ratingComments, setRatingComments] = useState<Record<string, string>>(
+    {}
+  );
   // Get logged-in user info from store
   const { user } = useUserStore();
 
@@ -55,7 +58,7 @@ export default function MyProjects({
       const res = await getProjectsByBuyerId(buyerId);
       setProjects(res.data);
     } catch (err) {
-      console.error('Failed to fetch projects:', err);
+      console.error("Failed to fetch projects:", err);
     } finally {
       setLoading(false);
     }
@@ -70,11 +73,30 @@ export default function MyProjects({
     try {
       setSubmitting((prev) => ({ ...prev, [projectId]: true }));
       await selectSeller(projectId, bidId);
-      alert('Seller selected!');
+      alert("Seller selected!");
       setToRefresh?.((prev) => !prev);
     } catch (err) {
-      console.log(err)
-      alert('Failed to select seller.');
+      console.log(err);
+      alert("Failed to select seller.");
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  const removeSelectedSeller = async (projectId: string) => {
+    const confirmed = confirm(
+      "Are you sure you want to remove the selected seller? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    try {
+      setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+      await unselectSeller(projectId); // Make sure this function exists in your `projectService`
+      alert("Seller removed from the project.");
+      setToRefresh?.((prev) => !prev);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to remove the seller.");
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
     }
@@ -88,11 +110,11 @@ export default function MyProjects({
     try {
       setSubmitting((prev) => ({ ...prev, [projectId]: true }));
       await completeProject(projectId);
-      alert('Project marked as completed!');
+      alert("Project marked as completed!");
       setToRefresh?.((prev) => !prev);
     } catch (err) {
-      console.log(err)
-      alert('Failed to mark as completed.');
+      console.log(err);
+      alert("Failed to mark as completed.");
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
     }
@@ -104,22 +126,22 @@ export default function MyProjects({
    */
   const handleRatingSubmit = async (projectId: string) => {
     const value = ratingInputs[projectId];
-    const comment = ratingComments[projectId] || '';
+    const comment = ratingComments[projectId] || "";
 
     // Validate rating value
     if (!value || value < 1 || value > 5) {
-      alert('Please enter a rating between 1 and 5.');
+      alert("Please enter a rating between 1 and 5.");
       return;
     }
 
     try {
       setSubmitting((prev) => ({ ...prev, [projectId]: true }));
       await rateSeller({ value, comment, projectId });
-      alert('Rating submitted!');
+      alert("Rating submitted!");
       setToRefresh?.((prev) => !prev);
     } catch (err) {
-      console.log(err)
-      alert('Failed to submit rating.');
+      console.log(err);
+      alert("Failed to submit rating.");
     } finally {
       setSubmitting((prev) => ({ ...prev, [projectId]: false }));
     }
@@ -136,7 +158,8 @@ export default function MyProjects({
   if (loading) return <p className="mt-4 text-gray-600">Loading projects...</p>;
 
   // Show message if no projects are available
-  if (!projects.length) return <p className="mt-4 text-gray-600">No projects yet.</p>;
+  if (!projects.length)
+    return <p className="mt-4 text-gray-600">No projects yet.</p>;
 
   // Main JSX rendering projects and actions
   return (
@@ -147,19 +170,30 @@ export default function MyProjects({
         const isSubmitting = submitting[project.id] || false;
 
         return (
-          <div key={project.id} className="border p-4 mb-6 rounded-lg shadow-sm bg-white">
+          <div
+            key={project.id}
+            className="border p-4 mb-6 rounded-lg shadow-sm bg-white"
+          >
             <div className="mb-2">
               <h3 className="text-lg font-bold">{project.title}</h3>
               <p className="text-gray-700">{project.description}</p>
-              <p><strong>Budget:</strong> ${project.budget}</p>
-              <p><strong>Deadline:</strong> {formatDate(project.deadline)}</p>
-              <p><strong>Status:</strong> {project.status}</p>
+              <p>
+                <strong>Budget:</strong> ${project.budget}
+              </p>
+              <p>
+                <strong>Deadline:</strong> {formatDate(project.deadline)}
+              </p>
+              <p>
+                <strong>Status:</strong> {project.status}
+              </p>
             </div>
 
             {/* Deliverable section */}
             {project.deliverable ? (
               <div className="mt-2 flex flex-col">
-                <p className="text-green-600 font-medium">Deliverable Uploaded</p>
+                <p className="text-green-600 font-medium">
+                  Deliverable Uploaded
+                </p>
                 <a
                   href={project.deliverable.fileUrl}
                   target="_blank"
@@ -169,13 +203,13 @@ export default function MyProjects({
                   View File <ExternalLink size={12} />
                 </a>
                 {/* Button to mark project completed if not already completed */}
-                {project.status !== 'COMPLETED' && (
+                {project.status !== "COMPLETED" && (
                   <button
                     onClick={() => handleComplete(project.id)}
                     disabled={isSubmitting}
                     className="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
                   >
-                    {isSubmitting ? 'Processing...' : 'Mark as Completed'}
+                    {isSubmitting ? "Processing..." : "Mark as Completed"}
                   </button>
                 )}
               </div>
@@ -194,14 +228,15 @@ export default function MyProjects({
                       className="flex justify-between items-center border px-3 py-2 rounded mb-2"
                     >
                       <span>
-                        {bid.sellerName} - ${bid.amount} in {bid.durationDays} days
+                        {bid.sellerName} - ${bid.amount} in {bid.durationDays}{" "}
+                        days
                       </span>
                       <button
                         onClick={() => handleSelect(project.id, bid.id)}
                         disabled={isSubmitting}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
                       >
-                        {isSubmitting ? 'Selecting...' : 'Select'}
+                        {isSubmitting ? "Selecting..." : "Select"}
                       </button>
                     </li>
                   ))}
@@ -214,14 +249,25 @@ export default function MyProjects({
               <div className="mt-4">
                 <h4 className="font-medium">Selected Bid</h4>
                 <p className="text-gray-800">
-                  {project.selectedBid.sellerName} - ${project.selectedBid.amount} in{' '}
+                  {project.selectedBid.sellerName} - $
+                  {project.selectedBid.amount} in{" "}
                   {project.selectedBid.durationDays} days
                 </p>
+
+                {project.status === "IN_PROGRESS" && (
+                  <button
+                    onClick={() => removeSelectedSeller(project.id)}
+                    disabled={isSubmitting}
+                    className="mt-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
+                  >
+                    {isSubmitting ? "Removing..." : "Remove Seller"}
+                  </button>
+                )}
               </div>
             )}
 
             {/* Rating section for completed projects */}
-            {project.status === 'COMPLETED' && (
+            {project.status === "COMPLETED" && (
               <div className="mt-4">
                 <h4 className="font-medium">Ratings</h4>
                 {project.rating ? (
@@ -233,8 +279,8 @@ export default function MyProjects({
                           key={star}
                           className={`text-xl ${
                             (project.rating?.value ?? 0) >= star
-                              ? 'text-yellow-400'
-                              : 'text-gray-300'
+                              ? "text-yellow-400"
+                              : "text-gray-300"
                           }`}
                         >
                           ★
@@ -242,7 +288,9 @@ export default function MyProjects({
                       ))}
                     </p>
                     {project.rating?.comment && (
-                      <p className="italic mt-1">&quot;{project.rating.comment}&quot;</p>
+                      <p className="italic mt-1">
+                        &quot;{project.rating.comment}&quot;
+                      </p>
                     )}
                   </div>
                 ) : (
@@ -253,12 +301,15 @@ export default function MyProjects({
                         <span
                           key={star}
                           onClick={() =>
-                            setRatingInputs((prev) => ({ ...prev, [project.id]: star }))
+                            setRatingInputs((prev) => ({
+                              ...prev,
+                              [project.id]: star,
+                            }))
                           }
                           className={`cursor-pointer text-2xl ${
                             (ratingInputs[project.id] || 0) >= star
-                              ? 'text-yellow-400'
-                              : 'text-gray-300'
+                              ? "text-yellow-400"
+                              : "text-gray-300"
                           }`}
                         >
                           ★
@@ -270,7 +321,7 @@ export default function MyProjects({
                       <span className="text-sm">Comment (optional)</span>
                       <textarea
                         rows={2}
-                        value={ratingComments[project.id] || ''}
+                        value={ratingComments[project.id] || ""}
                         onChange={(e) =>
                           setRatingComments((prev) => ({
                             ...prev,
@@ -286,7 +337,7 @@ export default function MyProjects({
                       disabled={isSubmitting}
                       className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded disabled:opacity-50 font-medium transition duration-100 transform hover:scale-[1.02]"
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                      {isSubmitting ? "Submitting..." : "Submit Rating"}
                     </button>
                   </div>
                 )}

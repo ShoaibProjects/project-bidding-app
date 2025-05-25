@@ -3,6 +3,7 @@ import {
   createProject,
   getAllProjects,
   selectSeller,
+  unselectSeller,
   completeProject,
   getSelectedProjectsForSeller,
   getProjectsByBuyerId,
@@ -26,6 +27,7 @@ const router = express.Router();
  * - POST /                              → Create a new project
  * - GET /                               → Get all projects
  * - POST /:projectId/select-seller/:bidId → Select a seller for a project
+ * - POST /:projectId/unselect-seller    → Unselect a seller from a project
  * - POST /:projectId/complete           → Mark a project as completed
  * - GET /selected-projects/seller/:id   → Get projects assigned to a seller
  * - GET /buyer/:id                      → Get all projects created by a buyer
@@ -41,6 +43,9 @@ router.get("/", requireAuth as RequestHandler, getAllProjects as RequestHandler)
 
 // Route for a buyer to select a seller's bid for a specific project
 router.post("/:projectId/select-seller/:bidId", requireAuth as RequestHandler, selectSeller as RequestHandler);
+
+// Route for a buyer to unselect a previously selected seller
+router.post("/:projectId/unselect-seller", requireAuth as RequestHandler, unselectSeller as RequestHandler);
 
 // Route to mark a project as completed
 router.post("/:projectId/complete", requireAuth as RequestHandler, completeProject as RequestHandler);

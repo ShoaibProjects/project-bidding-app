@@ -24,6 +24,15 @@ export const selectSeller = (projectId: string, bidId: string) =>
   API.post(`/api/projects/${projectId}/select-seller/${bidId}`);
 
 /**
+ * Unselects a previously selected seller from a project.
+ * Resets project status to "PENDING" and clears selected bid.
+ * @param projectId - ID of the project
+ * @returns Promise confirming the unselection
+ */
+export const unselectSeller = (projectId: string) =>
+  API.post(`/api/projects/${projectId}/unselect-seller`);
+
+/**
  * Marks a project as completed.
  * @param projectId - ID of the project to mark complete
  * @returns Promise confirming the completion
