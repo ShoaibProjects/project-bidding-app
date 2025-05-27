@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 // Define the user information type
 interface UserInfo {
   email: string;
+  name?: string;
   id: string;
   role: string;
 }

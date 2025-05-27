@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { login } from '@/app/services/authService';
-import { LoginData } from '@/app/types';
-import { useUserStore } from '@/store/userStore';
-import { Eye, EyeOff } from 'lucide-react'; // Icon components for password visibility toggle
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { login } from "@/app/services/authService";
+import { LoginData } from "@/app/types";
+import { useUserStore } from "@/store/userStore";
+import { Eye, EyeOff } from "lucide-react"; // Icon components for password visibility toggle
 
 /**
  * Login component - Renders login form with email and password fields.
@@ -17,8 +17,9 @@ export default function Login() {
 
   // State to hold form input values
   const [form, setForm] = useState<LoginData>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
+    rememberMe: false,
   });
 
   // State to toggle password visibility
@@ -48,11 +49,11 @@ export default function Login() {
         id: res.data.user.id,
         role: res.data.user.role,
       });
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem("token", res.data.token);
       router.push(`/dashboard/${res.data.user.role.toLowerCase()}`);
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please check your credentials.');
+      console.error("Login error:", error);
+      alert("Login failed. Please check your credentials.");
     }
   };
 
@@ -60,7 +61,9 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md transition-all duration-300 font-outfit">
         {/* Header */}
-        <h2 className="text-3xl font-semibold text-center mb-6 text-gray-800">Welcome Back</h2>
+        <h2 className="text-3xl font-semibold text-center mb-6 text-gray-800">
+          Welcome Back
+        </h2>
 
         {/* Form inputs */}
         <div className="space-y-4">
@@ -77,7 +80,7 @@ export default function Login() {
           {/* Password input with toggle visibility button */}
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={form.password}
               onChange={handleChange}
@@ -94,6 +97,23 @@ export default function Login() {
             </button>
           </div>
 
+          {/* Remember Me checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={form.rememberMe}
+              onChange={(e) =>
+                setForm({ ...form, rememberMe: e.target.checked })
+              }
+              className="mr-2"
+              id="rememberMe"
+            />
+            <label htmlFor="rememberMe" className="text-sm text-gray-700">
+              Remember Me
+            </label>
+          </div>
+
           {/* Login button */}
           <button
             onClick={handleLogin}
@@ -105,9 +125,9 @@ export default function Login() {
 
         {/* Signup redirect link */}
         <p className="mt-6 text-center text-sm text-gray-600">
-          New user?{' '}
+          New user?{" "}
           <button
-            onClick={() => router.push('/auth/signup')}
+            onClick={() => router.push("/auth/signup")}
             className="text-blue-600 hover:underline transition"
           >
             Sign up

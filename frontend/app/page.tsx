@@ -1,7 +1,9 @@
-'use client';  // Client-side React component in Next.js app directory
+"use client"; // Client-side React component in Next.js app directory
 
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useUserStore } from "@/store/userStore";
 
 /**
  * Home component - Landing page for the Project Bidding app.
@@ -9,17 +11,38 @@ import { motion } from 'framer-motion';
  */
 export default function Home() {
   const router = useRouter();
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const user = useUserStore((state) => state.user);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Redirect based on role
+      if (user.role === "BUYER") {
+        router.replace("/dashboard/buyer");
+      } else if (user.role === "SELLER") {
+        router.replace("/dashboard/seller");
+      } else {
+        // default fallback redirect if role unknown
+        router.replace("/");
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
+  if (isAuthenticated) {
+    // Optional: render null or loading spinner while redirecting
+    return null;
+  }
 
   return (
     <div
       className="min-h-screen bg-gradient-to-tr from-[#F9FAFB] via-[#FDF7F7] to-[#F4F5FF] flex items-center justify-center px-4"
-      style={{ fontFamily: '"Outfit", sans-serif' }}  // Apply custom font
+      style={{ fontFamily: '"Outfit", sans-serif' }} // Apply custom font
     >
       {/* Animated container for content */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="bg-white border border-gray-100 shadow-2xl rounded-3xl px-10 py-12 w-full md:max-w-lg text-center"
       >
         {/* Animated heading */}
@@ -34,7 +57,8 @@ export default function Home() {
 
         {/* Subheading text */}
         <p className="text-gray-500 text-base mb-10">
-          Match with the perfect buyer or seller and get projects done — beautifully.
+          Match with the perfect buyer or seller and get projects done —
+          beautifully.
         </p>
 
         {/* Buttons for navigation with animation on hover and tap */}
@@ -42,7 +66,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/auth/signup')}
+            onClick={() => router.push("/auth/signup")}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-md transition-all duration-300"
           >
             Sign Up
@@ -51,7 +75,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/auth/login')}
+            onClick={() => router.push("/auth/login")}
             className="bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 shadow-sm"
           >
             Log In

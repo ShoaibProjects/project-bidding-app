@@ -13,7 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
  */
 export const signupUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, rememberMe } = req.body;
 
     // Basic validation
     if (!email || !password || !role) {
@@ -47,7 +47,7 @@ export const signupUser = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: "14d" }
+      { expiresIn: rememberMe ? "30d" : "1d" }
     );
 
     // Send response with token and user info (excluding password)
@@ -71,7 +71,7 @@ export const signupUser = async (req: Request, res: Response) => {
  * Validates credentials, compares password, and returns a JWT token on success.
  */
 export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   // Find user by email
   const user = await prisma.user.findUnique({ where: { email } });
@@ -89,7 +89,7 @@ export const loginUser = async (req: Request, res: Response) => {
   const token = jwt.sign(
     { userId: user.id, role: user.role },
     JWT_SECRET,
-    { expiresIn: "14d" }
+    { expiresIn: rememberMe ? "30d" : "1d" }
   );
 
   // Return token and user info
@@ -101,4 +101,25 @@ export const loginUser = async (req: Request, res: Response) => {
       id: user.id,
     },
   });
+};
+
+// controllers/authController.ts
+export const getCurrentUser = async (req: Request, res: Response) => {
+  const { userId } = (req as any).user;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error("Auto-login error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };

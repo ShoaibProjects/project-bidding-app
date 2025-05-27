@@ -1,5 +1,6 @@
 import express, { RequestHandler } from "express";
-import { signupUser, loginUser } from "../controllers/auth.controller";
+import { signupUser, loginUser, getCurrentUser } from "../controllers/auth.controller";
+import { requireAuth } from "../middleware/jwt.middleware";
 
 const router = express.Router();
 
@@ -18,6 +19,9 @@ router.post("/signup", signupUser as RequestHandler);
 
 // Route for user login
 router.post("/login", loginUser as RequestHandler);
+
+// Auto-login route
+router.get("/me", requireAuth as RequestHandler, getCurrentUser as RequestHandler); 
 
 // Export the router to be used in the main app
 export default router;

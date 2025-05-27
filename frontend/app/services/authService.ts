@@ -28,7 +28,9 @@ export const login = (data: LoginData) => API.post("/api/auth/login", data);
  */
 export const logout = () => API.post("/api/auth/logout");
 
+
 /**
- * // Get info of the currently logged-in user (commented out)
- * // export const getCurrentUser = () => API.get("/api/auth/me");
+ * Get info of the currently logged-in user
+ * @returns Axios Promise for GET /api/auth/me
  */
+export const getCurrentUser = () => API.get("/api/auth/me");

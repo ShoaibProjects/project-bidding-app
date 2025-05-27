@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signup } from '@/app/services/authService';
-import { SignupData } from '@/app/types';
-import { useUserStore } from '@/store/userStore';
-import { Eye, EyeOff } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signup } from "@/app/services/authService";
+import { SignupData } from "@/app/types";
+import { useUserStore } from "@/store/userStore";
+import { Eye, EyeOff } from "lucide-react";
 
 /**
  * Signup component allows users to create an account.
@@ -18,9 +18,10 @@ export default function Signup() {
 
   // State to hold form data including email, password, and role (buyer or seller)
   const [form, setForm] = useState<SignupData>({
-    email: '',
-    password: '',
-    role: 'BUYER', // default role
+    email: "",
+    password: "",
+    role: "BUYER", // default role
+    rememberMe: false,
   });
 
   // State to toggle password visibility
@@ -30,7 +31,9 @@ export default function Signup() {
    * Handles input changes for both text inputs and select dropdown.
    * Updates the corresponding field in the form state.
    */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -48,11 +51,11 @@ export default function Signup() {
         id: res.data.user.id,
         role: res.data.user.role,
       });
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem("token", res.data.token);
       router.push(`/dashboard/${form.role.toLowerCase()}`);
     } catch (error) {
-      console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      console.error("Signup error:", error);
+      alert("Signup failed. Please try again.");
     }
   };
 
@@ -78,7 +81,7 @@ export default function Signup() {
           {/* Password input with visibility toggle */}
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={form.password}
               onChange={handleChange}
@@ -106,6 +109,23 @@ export default function Signup() {
             <option value="SELLER">Seller</option>
           </select>
 
+          {/* Remember Me checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={form.rememberMe}
+              onChange={(e) =>
+                setForm({ ...form, rememberMe: e.target.checked })
+              }
+              className="mr-2"
+              id="rememberMe"
+            />
+            <label htmlFor="rememberMe" className="text-sm text-gray-700">
+              Remember Me
+            </label>
+          </div>
+
           {/* Signup submit button */}
           <button
             onClick={handleSignup}
@@ -117,9 +137,9 @@ export default function Signup() {
 
         {/* Link to login page for existing users */}
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <button
-            onClick={() => router.push('/auth/login')}
+            onClick={() => router.push("/auth/login")}
             className="text-blue-600 hover:underline transition"
           >
             Log in

@@ -9,6 +9,7 @@ datasource db {
 
 model User {
   id        String  @id @default(cuid())
+  name      String?  
   email     String  @unique
   password  String
   role      Role
@@ -34,7 +35,7 @@ model Project {
   selectedBid    Bid?           @relation("SelectedBid", fields: [selectedBidId], references: [id])
   rating         Rating? 
   createdAt      DateTime?      @default(now())
-  updatedAt      DateTime?      @updatedAt
+  updatedAt      DateTime?      @updatedAt @default(now())
        
 }
 

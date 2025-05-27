@@ -19,6 +19,7 @@ export type Role = 'BUYER' | 'SELLER';
  */
 export type User = {
   id: string;
+  name?: string;
   email: string;
   password: string;
   role: Role;
@@ -43,8 +44,8 @@ export type Bid = {
   sellerId: string;
   seller?: User; // Seller info
   selectedFor?: Project; // If selected, the project this bid is assigned to
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 /**
@@ -64,8 +65,8 @@ export type Project = {
   selectedBid?: Bid;
   deliverable?: Deliverable;
   rating?: Rating; // Rating given to the seller after completion
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 /**
@@ -124,6 +125,7 @@ export type NewBid = {
 export type LoginData = {
   email: string;
   password: string;
+  rememberMe?: boolean;
 };
 
 /**
@@ -133,4 +135,5 @@ export type SignupData = {
   email: string;
   password: string;
   role: Role;
+  rememberMe?: boolean;
 };

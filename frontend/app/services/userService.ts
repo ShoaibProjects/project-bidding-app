@@ -14,3 +14,12 @@ export const rateSeller = (data: {
   comment?: string;
   projectId: string;
 }) => API.post("/api/users", data);
+
+/**
+ * Fetches public user profile information by user ID.
+ *
+ * @param userId - The ID of the user to retrieve
+ * @returns Promise resolving to user info excluding password
+ */
+export const getUserById = (userId: string) =>
+  API.get(`/api/users/${userId}`);
