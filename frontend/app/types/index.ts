@@ -28,6 +28,9 @@ export type User = {
   projects?: Project[]; // Projects created by the buyer
   ratings?: Rating[]; // Ratings given by the buyer
   receivedRatings?: Rating[]; // Ratings received by the seller
+  sentMessages?: Message[]; // Messages sent by the user
+  sentConversations?: Conversation[]; // Conversations where user is sender
+  receivedConversations?: Conversation[]; // Conversations where user is receiver
 };
 
 /**
@@ -137,3 +140,35 @@ export type SignupData = {
   role: Role;
   rememberMe?: boolean;
 };
+
+// ==========================
+// Chat Entity Types
+// ==========================
+
+/**
+ * Represents a conversation between two users.
+ * Assumes a one-to-one chat between sender and receiver.
+ */
+export type Conversation = {
+  id: string;
+  participants: [string, string]; // user IDs of both participants
+  users?: User[];
+  createdAt?: string;
+  updatedAt?: string;
+  otherUser?:{
+    email: string;
+  }
+};
+
+/**
+ * Represents a message sent within a conversation.
+ */
+export type Message = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+

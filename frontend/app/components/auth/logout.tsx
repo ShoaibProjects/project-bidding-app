@@ -20,7 +20,7 @@ export default function LogoutButton() {
   const handleLogout = () => {
     clearUser();                    // Clear user auth state from store
     localStorage.removeItem('token'); // Remove auth token from localStorage
-    router.push('/auth/login');     // Navigate to login page
+    router.push('/');     // Navigate to home page
   };
 
   return (

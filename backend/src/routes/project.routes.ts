@@ -39,7 +39,7 @@ const router = express.Router();
 router.post("/", requireAuth as RequestHandler, createProject as RequestHandler);
 
 // Route to get all projects (for buyers/sellers dashboard view)
-router.get("/", requireAuth as RequestHandler, getAllProjects as RequestHandler);
+router.get("/",  getAllProjects as RequestHandler);
 
 // Route for a buyer to select a seller's bid for a specific project
 router.post("/:projectId/select-seller/:bidId", requireAuth as RequestHandler, selectSeller as RequestHandler);

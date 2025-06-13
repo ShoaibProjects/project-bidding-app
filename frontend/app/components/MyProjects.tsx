@@ -12,6 +12,7 @@ import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
 import { ExternalLink } from "lucide-react";
 import { getSortableList } from "../utils/getSortableList";
+import { useRouter } from "next/navigation";
 
 // Define possible sorting options as a TypeScript union type
 type ProjectSortOption =
@@ -68,6 +69,8 @@ export default function MyProjects({
   );
   // Get logged-in user info from store
   const { user } = useUserStore();
+
+  const router = useRouter();
 
   // Fetch projects on user id or toRefresh change
   useEffect(() => {
@@ -379,6 +382,14 @@ export default function MyProjects({
                   {project.selectedBid.amount} in{" "}
                   {project.selectedBid.durationDays} days
                 </p>
+                <button onClick={()=>{
+                  router.push(`/profile/${project.selectedBid?.sellerId}`)
+                }}>View profile</button>
+
+                <button onClick={()=>{
+
+                  router.push(`/chats?sellerId=${project.selectedBid?.sellerId}`)
+                }}>Chat</button>
 
                 {project.status === "IN_PROGRESS" && (
                   <button
