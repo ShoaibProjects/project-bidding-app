@@ -14,11 +14,17 @@ import cloudinary from '../config/cloudinary'; // Cloudinary instance/config
 // Create a storage engine that tells multer how to upload to Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary, // Your initialized Cloudinary instance
-  params: async (_req, file) => {
+  params: async (req, file) => {
+    const { projectId } = req.params;
+
+    if (!projectId) {
+      throw new Error("Missing projectId in route parameters.");
+    }
+
     return {
-      folder: 'project-deliverables', // Target folder in Cloudinary
-      format: file.mimetype.split('/')[1], // e.g., 'image/png' → 'png'
-      public_id: file.originalname.split('.')[0], // e.g., 'report.pdf' → 'report'
+      folder: "project-deliverables", // Target folder in Cloudinary
+      format: file.mimetype.split("/")[1], // Extracts format (e.g., 'pdf', 'png')
+      public_id: projectId, // Overwrites existing file with same projectId
     };
   },
 });

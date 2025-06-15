@@ -6,6 +6,7 @@ import {
   getProjectsByBuyerId,
   completeProject,
   unselectSeller,
+  requestChanges
 } from "../services/projectService";
 import { rateSeller } from "../services/userService";
 import { Project } from "../types";
@@ -269,6 +270,20 @@ export default function MyProjects({
     }
   };
 
+ const handleChangeRequest = async (projectId: string) => {
+   try {
+     setSubmitting(prev => ({ ...prev, [projectId]: true }));
+     await requestChanges(projectId);
+     alert("Change request sent!");
+     setToRefresh?.(prev => !prev);
+   } catch (err) {
+     console.error(err);
+     alert("Failed to send change request.");
+   } finally {
+     setSubmitting(prev => ({ ...prev, [projectId]: false }));
+   }
+ };
+
   /**
    * Format ISO date string to a more readable local string
    * @param {string} date - ISO date string
@@ -314,6 +329,18 @@ export default function MyProjects({
                 <strong>Status:</strong> {project.status}
               </p>
             </div>
+            +          {/* Read‑only progress bar */}
+          <div className="my-2">
+            <label htmlFor={`progress-${project.id}`} className="text-sm">
+              Progress: {project.progress ?? 0}%
+            </label>
+            <progress
+              id={`progress-${project.id}`}
+              value={project.progress ?? 0}
+              max={100}
+              className="w-full h-2 mt-1"
+            />
+          </div>
 
             {/* Deliverable section */}
             {project.deliverable ? (
@@ -339,6 +366,16 @@ export default function MyProjects({
                     {isSubmitting ? "Processing..." : "Mark as Completed"}
                   </button>
                 )}
+                {/* Request Change on REVIEW */}
+            {project.status === "IN_REVIEW" && (
+              <button
+                onClick={() => handleChangeRequest(project.id)}
+                disabled={submitting[project.id]}
+                className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded disabled:opacity-50"
+              >
+                {submitting[project.id] ? "Sending…" : "Request Change"}
+              </button>
+            )}
               </div>
             ) : (
               <p className="text-gray-500 mt-2">Deliverable not yet uploaded</p>
@@ -391,7 +428,7 @@ export default function MyProjects({
                   router.push(`/chats?sellerId=${project.selectedBid?.sellerId}`)
                 }}>Chat</button>
 
-                {project.status === "IN_PROGRESS" && (
+                {(project.status === "IN_PROGRESS" || project.status === "IN_REVIEW" || project.status === "CHANGES_REQUESTED") && (
                   <button
                     onClick={() => removeSelectedSeller(project.id)}
                     disabled={isSubmitting}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import GoogleLoginButton from "@/app/components/auth/loginBtn";
 
 /**
  * Auth component - Auth page for the Project Bidding app.
@@ -59,6 +60,7 @@ export default function Page() {
           </motion.button>
         </div>
       </motion.div>
+      <GoogleLoginButton/>
     </div>
   );
 }

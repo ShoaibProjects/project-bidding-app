@@ -3,7 +3,12 @@
 // ==========================
 
 /** Possible statuses for a project */
-export type ProjectStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+export type ProjectStatus = 
+  | 'PENDING'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'CHANGES_REQUESTED'
+  | 'COMPLETED';
 
 /** User roles in the system */
 export type Role = 'BUYER' | 'SELLER';
@@ -61,6 +66,7 @@ export type Project = {
   budget: string;
   deadline: string; // ISO format
   status: ProjectStatus;
+  progress: number; // 0 to 100
   buyerId: string;
   buyer?: User;
   bids: Bid[];

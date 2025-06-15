@@ -65,7 +65,7 @@ export const getProjectByProjectId = (projectId: string) =>
   API.get(`/api/projects/${projectId}`);
 
 /**
- * Uploads a deliverable file for a project.
+ * Uploads a deliverable file for a project (triggers status to "IN_REVIEW").
  * @param projectId - ID of the project
  * @param file - File to be uploaded (e.g. PDF, ZIP, DOCX, etc.)
  * @returns Promise confirming successful upload
@@ -80,3 +80,30 @@ export const uploadDeliverable = (projectId: string, file: File) => {
     },
   });
 };
+
+
+/**
+ * Request changes for a deliverable (status → CHANGES_REQUESTED).
+ */
+export const requestChanges = (projectId: string) =>
+  API.patch(`/api/projects/${projectId}/request-changes`);
+
+/**
+ * Re-upload revised deliverable after changes requested.
+ */
+export const reuploadDeliverable = (projectId: string, file: File) => {
+  const formData = new FormData();
+  formData.append("deliverable", file);
+
+  return API.post(`/api/projects/${projectId}/reupload`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+/**
+ * Update the progress percentage of a project.
+ */
+export const updateProjectProgress = (projectId: string, progress: number) =>
+  API.patch(`/api/projects/${projectId}/progress`, { progress });

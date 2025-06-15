@@ -11,7 +11,8 @@ model User {
   id        String  @id @default(cuid())
   name      String?  
   email     String  @unique
-  password  String
+  password  String?  // ✅ Made optional for Google users
+  firebaseId String? @unique // ✅ New field to store Firebase UID
   role      Role
   bids      Bid[]
   projects  Project[] @relation("BuyerProjects")
@@ -32,6 +33,7 @@ model Project {
   budget         String
   deadline       DateTime
   status         ProjectStatus  @default(PENDING)
+  progress       Int            @default(0)
   buyerId        String
   buyer          User           @relation("BuyerProjects", fields: [buyerId], references: [id])
   bids           Bid[]
@@ -114,5 +116,8 @@ enum Role {
 enum ProjectStatus {
   PENDING
   IN_PROGRESS
+  IN_REVIEW
+  CHANGES_REQUESTED
   COMPLETED
 }
+

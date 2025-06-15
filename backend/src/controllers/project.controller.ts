@@ -277,24 +277,137 @@ export const uploadDeliverable = async (req: Request, res: Response) => {
       },
     });
 
-    const project = await prisma.project.findUnique({
+    const updatedProject = await prisma.project.update({
       where: { id: projectId },
+      data: {
+        status: "IN_REVIEW",
+        progress: 100,
+      },
       include: { buyer: true },
     });
 
-    if (!project || !project.buyer) {
+    if (!updatedProject || !updatedProject.buyer) {
       return res.status(404).json({ error: "Project or buyer not found" });
     }
 
     await sendEmail(
-      project.buyer.email,
-      "New deliverable uploaded",
-      `A deliverable has been uploaded for your project: "${project.title}". Please review it.`
+      updatedProject.buyer.email,
+      "Deliverable Uploaded",
+      `A deliverable has been uploaded for your project "${updatedProject.title}". Please review it.`
     );
 
-    res.json({ message: "Deliverable uploaded successfully", deliverable });
+    res.json({ message: "Deliverable uploaded successfully", deliverable, project: updatedProject });
   } catch (error) {
     console.error("Upload deliverable error:", error);
     res.status(500).json({ error: "Failed to upload deliverable" });
   }
 };
+
+/**
+ * Allows the buyer to request changes on a submitted deliverable.
+ */
+export const requestChanges = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status: "CHANGES_REQUESTED",
+      },
+      include: {
+        selectedBid: { include: { seller: true } },
+        buyer: true,
+      },
+    });
+
+    if (!updatedProject.selectedBid?.seller) {
+      return res.status(400).json({ error: "No seller selected for this project" });
+    }
+
+    await sendEmail(
+      updatedProject.selectedBid.seller.email,
+      "Changes Requested",
+      `The buyer has requested changes on the project "${updatedProject.title}". Please review and resubmit.`
+    );
+
+    res.json({ message: "Changes requested successfully", project: updatedProject });
+  } catch (error) {
+    console.error("Request changes error:", error);
+    res.status(500).json({ error: "Failed to request changes" });
+  }
+};
+
+/**
+ * Allows the seller to update the progress of the project manually (0–99).
+ * Prevents setting progress to 100 (done automatically on deliverable).
+ */
+export const updateProjectProgress = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { progress } = req.body;
+
+    if (typeof progress !== "number" || progress < 0 || progress >= 100) {
+      return res.status(400).json({ error: "Progress must be a number between 0 and 99" });
+    }
+
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data: { progress },
+    });
+
+    res.json({ message: "Progress updated successfully", project: updatedProject });
+  } catch (error) {
+    console.error("Update progress error:", error);
+    res.status(500).json({ error: "Failed to update project progress" });
+  }
+};
+
+export const reuploadDeliverable = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const file = req.file as Express.Multer.File;
+
+    if (!file || !(file as any).path) {
+      return res.status(400).json({ error: "No file uploaded or file path missing" });
+    }
+
+    const uploadedFileUrl = (file as any).path;
+
+    // Either update or create deliverable entry (upsert-like logic)
+    const existingDeliverable = await prisma.deliverable.findFirst({
+      where: { projectId },
+    });
+
+    const deliverable = existingDeliverable
+      ? await prisma.deliverable.update({
+          where: { id: existingDeliverable.id },
+          data: { fileUrl: uploadedFileUrl },
+        })
+      : await prisma.deliverable.create({
+          data: { projectId, fileUrl: uploadedFileUrl },
+        });
+
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data: { status: "IN_REVIEW" },
+      include: { buyer: true },
+    });
+
+    await sendEmail(
+      updatedProject.buyer.email,
+      "Deliverable Re-Uploaded",
+      `A revised deliverable has been re-uploaded for your project "${updatedProject.title}". Please review it.`
+    );
+
+    res.json({
+      message: "Deliverable re-uploaded successfully",
+      deliverable,
+      project: updatedProject,
+    });
+  } catch (error) {
+    console.error("Error reuploading deliverable:", error);
+    res.status(500).json({ error: "Failed to re-upload deliverable" });
+  }
+};
+

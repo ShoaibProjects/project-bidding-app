@@ -2,6 +2,7 @@ import bcrypt from "bcrypt"; // For password hashing
 import { Request, Response } from "express"; // For type safety in Express routes
 import prisma from "../utils/prisma"; // Prisma client instance for DB interaction
 import jwt from "jsonwebtoken"; // For generating JWTs
+import admin from "../config/firebase"; // Firebase Admin instance
 
 // Use environment variable for JWT secret, fallback to default for development
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
@@ -79,6 +80,9 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Invalid email or password." });
   }
 
+  if (!user.password) {
+  return res.status(400).json({ error: "This account does not have a password. Try logging in with Google." });
+}
   // Compare provided password with stored hashed password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
@@ -121,5 +125,63 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Auto-login error:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * Handle Google login using Firebase ID token.
+ * Verifies token, creates/fetches user, and returns JWT.
+ */
+export const googleLoginUser = async (req: Request, res: Response) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ error: "Missing idToken" });
+  }
+
+  try {
+    // Verify ID token using Firebase Admin SDK
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { uid, email, name } = decoded;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email not available from Google" });
+    }
+
+    // Try finding existing user
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    // If user doesn't exist, create one (default to BUYER role)
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: name || email,
+          role: "BUYER", // Or ask role later
+          firebaseId: uid,
+        },
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.status(200).json({
+      message: "Login successful via Google",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+      },
+    });
+  } catch (err) {
+    console.error("Google login error:", err);
+    res.status(401).json({ error: "Invalid or expired ID token" });
   }
 };

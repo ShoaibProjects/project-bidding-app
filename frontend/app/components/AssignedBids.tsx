@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSelectedProjectsForSeller } from "../services/projectService";
+import { getSelectedProjectsForSeller, reuploadDeliverable, updateProjectProgress } from "../services/projectService";
 import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
 import UploadDeliverable from "./UploadDeliverable";
@@ -52,6 +52,13 @@ export default function AssignedProjectList({
 
   // Get logged-in user from global store
   const { user } = useUserStore();
+
+  // Track which projects are in "edit mode"
+const [editProjectIdMap, setEditProjectIdMap] = useState<Record<string, boolean>>({});
+
+// Track the new progress values
+const [editedProgressMap, setEditedProgressMap] = useState<Record<string, number>>({});
+
 
   // Fetch assigned projects on component mount or when user ID or refresh flag changes
   useEffect(() => {
@@ -163,7 +170,90 @@ export default function AssignedProjectList({
             <strong>Buyer:</strong> {project.buyer?.email}
           </p>
 
-          {/* Deliverable section */}
+{/* 🔄 Editable Progress Section */}
+<div className="mt-2">
+  <div className="flex items-center justify-between">
+    <p className="text-sm font-medium">
+      Progress:
+      <span className="font-semibold ml-1">
+        {editProjectIdMap[project.id]
+          ? (editedProgressMap[project.id] ?? project.progress ?? 0)
+          : (project.progress ?? 0)}
+        %
+      </span>
+    </p>
+
+    {!editProjectIdMap[project.id] && (
+      <button
+        onClick={() => setEditProjectIdMap({ ...editProjectIdMap, [project.id]: true })}
+        className="text-blue-600 hover:underline text-sm"
+      >
+        ✏️ Edit
+      </button>
+    )}
+  </div>
+
+  {!editProjectIdMap[project.id] ? (
+    <div className="relative w-full h-3 bg-gray-200 rounded mt-1">
+      <div
+        className="absolute top-0 left-0 h-3 bg-blue-500 rounded"
+        style={{ width: `${project.progress ?? 0}%` }}
+      />
+    </div>
+  ) : (
+    <>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={editedProgressMap[project.id] ?? project.progress ?? 0}
+        onChange={(e) =>
+          setEditedProgressMap({
+            ...editedProgressMap,
+            [project.id]: parseInt(e.target.value),
+          })
+        }
+        className="w-full mt-2"
+      />
+      <div className="flex justify-end mt-2 gap-2">
+        <button
+          onClick={() =>
+            setEditProjectIdMap({ ...editProjectIdMap, [project.id]: false })
+          }
+          className="px-3 py-1 bg-gray-200 text-sm rounded"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={async () => {
+            const newProgress = editedProgressMap[project.id];
+            try {
+              await updateProjectProgress(project.id, newProgress);
+              setToRefresh?.(!toRefresh);
+              setEditProjectIdMap({ ...editProjectIdMap, [project.id]: false });
+            } catch (err) {
+              console.error("Failed to update progress", err);
+            }
+          }}
+          className="px-3 py-1 bg-blue-600 text-white text-sm rounded"
+        >
+          Save
+        </button>
+      </div>
+    </>
+  )}
+</div>
+
+
+
+  {/* ⚠️ Changes Requested Indicator */}
+  {project.status === "CHANGES_REQUESTED" && (
+    <p className="text-yellow-600 font-semibold mt-2">
+      ⚠️ Buyer requested changes – please re-upload the deliverable.
+    </p>
+  )}
+
+          {/* 📎 Deliverable section */}
           {project.deliverable ? (
             <div>
               <p className="text-green-600 font-semibold">
@@ -177,6 +267,28 @@ export default function AssignedProjectList({
               >
                 View File <ExternalLink size={12} />
               </a>
+
+      {/* 🔁 Re-upload */}
+      {setToRefresh && (
+        <div className="mt-2">
+          <label className="text-sm font-medium">Re-upload Deliverable:</label>
+          <input
+            type="file"
+            accept=".pdf,.zip,.docx,.doc"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                await reuploadDeliverable(project.id, file);
+                setToRefresh(!toRefresh);
+              } catch (err) {
+                console.error("Failed to re-upload deliverable", err);
+              }
+            }}
+            className="mt-1 block text-sm"
+          />
+        </div>
+      )}
             </div>
           ) : (
             <>
