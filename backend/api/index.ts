@@ -12,6 +12,7 @@ import authRoutes from '../src/routes/auth.routes';
 import chatRoutes from '../src/routes/chat.routes';
 
 import { initSocket, getIO } from '../src/utils/socket';
+import { scheduleDeadlineReminders } from '../src/services/cron.service';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -34,6 +35,8 @@ app.use(express.json());
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running' });
 });
+
+scheduleDeadlineReminders();
 
 // Register API route handlers
 app.use('/api/auth', authRoutes);
