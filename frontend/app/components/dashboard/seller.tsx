@@ -6,6 +6,7 @@ import MyBidsList from "../MyBids";
 import AssignedProjectList from "../AssignedBids";
 import LogoutButton from "../auth/logout";
 import { useUserStore } from "@/store/userStore";
+import { useRouter } from "next/navigation";
 
 /**
  * SellerDashboard component
@@ -17,6 +18,8 @@ import { useUserStore } from "@/store/userStore";
 export default function SellerDashboard() {
   // State to trigger refresh of project and bid lists on updates
   const [toRefresh, setToRefresh] = useState(false);
+
+  const router = useRouter();
 
   // Access current logged-in user info from global state store
   const { user } = useUserStore();
@@ -30,6 +33,9 @@ export default function SellerDashboard() {
           {/* Display logged-in user's email */}
           <p className="text-sm text-gray-500">Logged in as {user?.email}</p>
         </div>
+        <button onClick={()=>{
+          router.push(`/profile/${user?.id}`)
+        }}>profile</button>
         <LogoutButton />
       </header>
 

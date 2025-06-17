@@ -23,3 +23,41 @@ export const rateSeller = (data: {
  */
 export const getUserById = (userId: string) =>
   API.get(`/api/users/${userId}`);
+
+/**
+ * Updates the authenticated user's profile.
+ * Sends name, description, and profileImage (as File).
+ *
+ * @param data - Object containing:
+ *  - name: Optional updated name
+ *  - description: Optional updated description
+ *  - profileImage: Optional File object (not URL)
+ * @returns Promise resolving to the updated user
+ */
+
+/**
+ * Updates the authenticated user's profile info (name and/or description).
+ *
+ * @param data - Object containing:
+ *  - name?: string
+ *  - description?: string
+ * @returns Promise resolving to the updated user
+ */
+export const updateUserProfileInfo = (data: {
+  name?: string;
+  description?: string;
+}) => API.patch(`/api/users/update/info`, data);
+
+/**
+ * Updates the authenticated user's profile image.
+ *
+ * @param formData - FormData containing:
+ *  - profileImage: File object (e.g., from input type="file")
+ * @returns Promise resolving to the updated user
+ */
+export const updateUserProfileImage = (formData: FormData) =>
+  API.patch(`/api/users/update/image`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });

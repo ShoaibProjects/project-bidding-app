@@ -28,7 +28,9 @@ export function getSortableList<T extends Project | Bid>(
         const statusOrder: Record<string, number> = {
           PENDING: 0,
           IN_PROGRESS: 1,
-          COMPLETED: 2,
+          CHANGES_REQUESTED: 2,
+          COMPLETED: 3,
+          CANCELLED: 4
         };
         return (
           statusOrder[(a as any).status] - statusOrder[(b as any).status]

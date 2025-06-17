@@ -7,6 +7,7 @@ interface UserInfo {
   name?: string;
   id: string;
   role: string;
+  description?: string;
 }
 
 // Define the store state and actions

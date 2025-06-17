@@ -1,7 +1,9 @@
 import express, { RequestHandler } from "express";
-import { rateSeller } from "../controllers/user.controller";
+import { rateSeller, updateProfileImage, updateProfileInfo } from "../controllers/user.controller";
 import { requireAuth } from "../middleware/jwt.middleware";
 import { getUserById } from "../controllers/user.controller";
+import uploadProfileImage from "../middleware/uploadProfileImage";
+
 
 const router = express.Router();
 
@@ -28,5 +30,29 @@ router.post("/", requireAuth as RequestHandler, rateSeller as RequestHandler);
  * Example: GET /users/abc123
  */
 router.get("/:id", requireAuth as RequestHandler, getUserById as RequestHandler);
+
+
+/**
+ * @route   PATCH /update/info
+ * @desc    Update user profile info (name, description)
+ * @access  Protected
+ */
+router.patch(
+  "/update/info",
+  requireAuth as RequestHandler,
+  updateProfileInfo as RequestHandler
+);
+
+/**
+ * @route   PATCH /update/image
+ * @desc    Update user profile image
+ * @access  Protected
+ */
+router.patch(
+  "/update/image",
+  requireAuth as RequestHandler,
+  uploadProfileImage.single("profileImage"),
+  updateProfileImage as RequestHandler
+);
 
 export default router;

@@ -8,7 +8,8 @@ export type ProjectStatus =
   | 'IN_PROGRESS'
   | 'IN_REVIEW'
   | 'CHANGES_REQUESTED'
-  | 'COMPLETED';
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 /** User roles in the system */
 export type Role = 'BUYER' | 'SELLER';
@@ -25,6 +26,8 @@ export type Role = 'BUYER' | 'SELLER';
 export type User = {
   id: string;
   name?: string;
+  description?: string; 
+  profileImage?: string;
   email: string;
   password: string;
   role: Role;
@@ -66,7 +69,7 @@ export type Project = {
   budget: string;
   deadline: string; // ISO format
   status: ProjectStatus;
-  progress: number; // 0 to 100
+  progress?: number; // 0 to 100
   buyerId: string;
   buyer?: User;
   bids: Bid[];

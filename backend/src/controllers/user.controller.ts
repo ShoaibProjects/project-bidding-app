@@ -114,9 +114,11 @@ export const getUserById = async (req: Request, res: Response) => {
       select: {
         id: true,
         name: true,
+        description: true,
         email: true,    
         role: true,
         rating: true,
+        profileImage: true,
       },
     });
 
@@ -130,3 +132,79 @@ export const getUserById = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
+/**
+ * Update user's profile (name, description, profileImage)
+ * Requires authentication (`req.user.userId`)
+ * 
+ * Supports: Multipart/form-data if profileImage is uploaded
+ * Accepts: { name?, description? } in body, and optionally image file in req.file
+ */
+
+export const updateProfileInfo = async (req: Request, res: Response) => {
+  const userId = (req as any).user.userId;
+  const { name, description } = req.body;
+  console.log(req.body)
+
+  try {
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (description) updateData.description = description;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update." });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        description: true,
+        profileImage: true,
+        rating: true
+      },
+    });
+
+    res.json({ message: "Profile info updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Update Profile Info Error:", error);
+    res.status(500).json({ error: "Failed to update profile info" });
+  }
+};
+
+export const updateProfileImage = async (req: Request, res: Response) => {
+  const userId = (req as any).user.userId;
+  const file = req.file as Express.Multer.File;
+
+  if (!file || !(file as any).path) {
+    return res.status(400).json({ error: "Profile image is required." });
+  }
+
+  const profileImage = (file as any).path;
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { profileImage },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        description: true,
+        profileImage: true,
+        rating: true
+      },
+    });
+
+    res.json({ message: "Profile image updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Update Profile Image Error:", error);
+    res.status(500).json({ error: "Failed to update profile image" });
+  }
+};
+

@@ -6,6 +6,7 @@ import MyProjects from '../MyProjects';
 import ProjectList from '../ProjectList';
 import LogoutButton from '../auth/logout';
 import { useUserStore } from '@/store/userStore';
+import { useRouter } from 'next/navigation';
 
 /**
  * BuyerDashboard component
@@ -17,6 +18,8 @@ import { useUserStore } from '@/store/userStore';
 export default function BuyerDashboard() {
   // State to trigger refresh of project lists when a new project is created or updated
   const [toRefresh, setToRefresh] = useState(false);
+
+  const router = useRouter();
 
   // Access current logged-in user info from global store
   const { user } = useUserStore();
@@ -30,6 +33,9 @@ export default function BuyerDashboard() {
           {/* Display logged-in user email if available */}
           <p className="text-sm text-gray-500">Logged in as {user?.email}</p>
         </div>
+                <button onClick={()=>{
+          router.push(`/profile/${user?.id}`)
+        }}>profile</button>
         <LogoutButton />
       </header>
 

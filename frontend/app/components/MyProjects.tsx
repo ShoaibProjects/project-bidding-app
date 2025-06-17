@@ -6,12 +6,14 @@ import {
   getProjectsByBuyerId,
   completeProject,
   unselectSeller,
-  requestChanges
+  requestChanges,
+  updateProjectDetails,
+  cancelProject
 } from "../services/projectService";
 import { rateSeller } from "../services/userService";
 import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Edit3, Save, X } from "lucide-react";
 import { getSortableList } from "../utils/getSortableList";
 import { useRouter } from "next/navigation";
 
@@ -31,7 +33,7 @@ type ProjectSortOption =
 
 /**
  * Component to display and manage projects for the logged-in buyer.
- * Allows selecting sellers, marking projects as completed, and rating sellers.
+ * Allows selecting sellers, marking projects as completed, rating sellers, and editing project details.
  *
  * @param {object} props - Component props
  * @param {boolean} props.toRefresh - Boolean to trigger refresh of project list
@@ -68,6 +70,19 @@ export default function MyProjects({
   const [ratingComments, setRatingComments] = useState<Record<string, string>>(
     {}
   );
+
+  // Edit mode states
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    description: string;
+    deadline: string;
+  }>({
+    title: "",
+    description: "",
+    deadline: "",
+  });
+
   // Get logged-in user info from store
   const { user } = useUserStore();
 
@@ -91,6 +106,89 @@ export default function MyProjects({
       console.error("Failed to fetch projects:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Start editing a project
+   * @param {Project} project - Project to edit
+   */
+  const startEditing = (project: Project) => {
+    setEditingProject(project.id);
+    setEditForm({
+      title: project.title,
+      description: project.description,
+      deadline: new Date(project.deadline).toISOString().slice(0, 16), // Format for datetime-local input
+    });
+  };
+
+  /**
+   * Cancel editing mode
+   */
+  const cancelEditing = () => {
+    setEditingProject(null);
+    setEditForm({
+      title: "",
+      description: "",
+      deadline: "",
+    });
+  };
+
+  /**
+   * Handle form input changes during editing
+   */
+  const handleEditFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  /**
+   * Save project changes
+   * @param {string} projectId - ID of the project to update
+   */
+  const saveProjectChanges = async (projectId: string) => {
+    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.deadline) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+      
+      const updateData: { title?: string; description?: string; deadline?: string } = {};
+      
+      // Only include fields that have changed
+      const currentProject = projects.find(p => p.id === projectId);
+      if (currentProject) {
+        if (editForm.title !== currentProject.title) {
+          updateData.title = editForm.title;
+        }
+        if (editForm.description !== currentProject.description) {
+          updateData.description = editForm.description;
+        }
+        const currentDeadline = new Date(currentProject.deadline).toISOString().slice(0, 16);
+        if (editForm.deadline !== currentDeadline) {
+          updateData.deadline = editForm.deadline;
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        alert("No changes detected.");
+        cancelEditing();
+        return;
+      }
+
+      await updateProjectDetails(projectId, updateData);
+      alert("Project updated successfully!");
+      setToRefresh?.((prev) => !prev);
+      cancelEditing();
+    } catch (err) {
+      console.error("Failed to update project:", err);
+      alert("Failed to update project. Please try again.");
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [projectId]: false }));
     }
   };
 
@@ -284,12 +382,41 @@ export default function MyProjects({
    }
  };
 
+ // Usage in a React component
+const handleCancelProject = async (projectId: string) => {
+  const confirmed = confirm(
+    "Are you sure you want to cancel this project? This action cannot be undone."
+  );
+  if (!confirmed) return;
+
+  try {
+    setSubmitting((prev) => ({ ...prev, [projectId]: true }));
+    await cancelProject(projectId);
+    alert("Project cancelled successfully!");
+    setToRefresh?.((prev) => !prev);
+  } catch (err) {
+    console.error("Failed to cancel project:", err);
+    alert("Failed to cancel project. Please try again.");
+  } finally {
+    setSubmitting((prev) => ({ ...prev, [projectId]: false }));
+  }
+};
+
   /**
    * Format ISO date string to a more readable local string
    * @param {string} date - ISO date string
    * @returns {string} Localized date string
    */
   const formatDate = (date: string) => new Date(date).toLocaleString();
+
+  /**
+   * Check if project can be edited (only PENDING or IN_PROGRESS projects should be editable)
+   * @param {Project} project - Project to check
+   * @returns {boolean} Whether project can be edited
+   */
+  const canEditProject = (project: Project) => {
+    return (project.status === "PENDING" || project.status === "IN_PROGRESS");
+  };
 
   // Show loading text if fetching projects
   if (loading) return <p className="mt-4 text-gray-600">Loading projects...</p>;
@@ -308,6 +435,7 @@ export default function MyProjects({
 
       {sortedProjects.map((project) => {
         const isSubmitting = submitting[project.id] || false;
+        const isEditing = editingProject === project.id;
 
         const sortedBids = getSortableList(project.bids || [], bidSortOption, "bid");
 
@@ -316,31 +444,118 @@ export default function MyProjects({
             key={project.id}
             className="border p-4 mb-6 rounded-lg shadow-sm bg-white"
           >
-            <div className="mb-2">
-              <h3 className="text-lg font-bold">{project.title}</h3>
-              <p className="text-gray-700">{project.description}</p>
-              <p>
-                <strong>Budget:</strong> ${project.budget}
-              </p>
-              <p>
-                <strong>Deadline:</strong> {formatDate(project.deadline)}
-              </p>
-              <p>
-                <strong>Status:</strong> {project.status}
-              </p>
+            {/* Project Header with Edit Button */}
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1">
+                {isEditing ? (
+                  // Edit mode
+                  <div className="space-y-3">
+                    <input
+                      name="title"
+                      value={editForm.title}
+                      onChange={handleEditFormChange}
+                      className="w-full text-lg font-bold border border-gray-300 rounded px-2 py-1"
+                      placeholder="Project title"
+                    />
+                    <textarea
+                      name="description"
+                      value={editForm.description}
+                      onChange={handleEditFormChange}
+                      className="w-full text-gray-700 border border-gray-300 rounded px-2 py-1 min-h-20"
+                      placeholder="Project description"
+                    />
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Deadline:</label>
+                      <input
+                        name="deadline"
+                        type="datetime-local"
+                        value={editForm.deadline}
+                        onChange={handleEditFormChange}
+                        className="border border-gray-300 rounded px-2 py-1"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // View mode
+                  <div>
+                    <h3 className="text-lg font-bold">{project.title}</h3>
+                    <p className="text-gray-700">{project.description}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Edit/Save/Cancel buttons */}
+              <div className="flex gap-2 ml-4">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={() => saveProjectChanges(project.id)}
+                      disabled={isSubmitting}
+                      className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded disabled:opacity-50 text-sm"
+                    >
+                      <Save size={14} />
+                      {isSubmitting ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      disabled={isSubmitting}
+                      className="flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded disabled:opacity-50 text-sm"
+                    >
+                      <X size={14} />
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  canEditProject(project) && (
+                    <div>
+                                          <button
+                      onClick={() => startEditing(project)}
+                      className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                    >
+                      <Edit3 size={14} />
+                      Edit
+                    </button>
+                        <button
+      onClick={() => handleCancelProject(project.id)}
+      disabled={isSubmitting}
+      className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded disabled:opacity-50 text-sm"
+    >
+      <X size={14} />
+      Cancel Project
+    </button>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
-            +          {/* Read‑only progress bar */}
-          <div className="my-2">
-            <label htmlFor={`progress-${project.id}`} className="text-sm">
-              Progress: {project.progress ?? 0}%
-            </label>
-            <progress
-              id={`progress-${project.id}`}
-              value={project.progress ?? 0}
-              max={100}
-              className="w-full h-2 mt-1"
-            />
-          </div>
+
+            {/* Project Details */}
+            {!isEditing && (
+              <div className="mb-2">
+                <p>
+                  <strong>Budget:</strong> ${project.budget}
+                </p>
+                <p>
+                  <strong>Deadline:</strong> {formatDate(project.deadline)}
+                </p>
+                <p>
+                  <strong>Status:</strong> {project.status}
+                </p>
+              </div>
+            )}
+
+            {/* Read‑only progress bar */}
+            <div className="my-2">
+              <label htmlFor={`progress-${project.id}`} className="text-sm">
+                Progress: {project.progress ?? 0}%
+              </label>
+              <progress
+                id={`progress-${project.id}`}
+                value={project.progress ?? 0}
+                max={100}
+                className="w-full h-2 mt-1"
+              />
+            </div>
 
             {/* Deliverable section */}
             {project.deliverable ? (
@@ -367,26 +582,26 @@ export default function MyProjects({
                   </button>
                 )}
                 {/* Request Change on REVIEW */}
-            {project.status === "IN_REVIEW" && (
-              <button
-                onClick={() => handleChangeRequest(project.id)}
-                disabled={submitting[project.id]}
-                className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded disabled:opacity-50"
-              >
-                {submitting[project.id] ? "Sending…" : "Request Change"}
-              </button>
-            )}
+                {project.status === "IN_REVIEW" && (
+                  <button
+                    onClick={() => handleChangeRequest(project.id)}
+                    disabled={submitting[project.id]}
+                    className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                  >
+                    {submitting[project.id] ? "Sending…" : "Request Change"}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="text-gray-500 mt-2">Deliverable not yet uploaded</p>
             )}
 
             {/* Display bids if any and no seller selected yet */}
-            {project.bids.length > 0 && !project.selectedBid && (
+            {project.bids.length > 0 && !project.selectedBid && (project.status!="CANCELLED") && (
               <div className="mt-4">
                 <h4 className="font-medium">Bids</h4>
-                      {/* Show bid sort dropdown */}
-      <BidSortSelector selected={bidSortOption} onChange={setBidSortOption} />
+                {/* Show bid sort dropdown */}
+                <BidSortSelector selected={bidSortOption} onChange={setBidSortOption} />
                 <ul>
                   {sortedBids.map((bid) => (
                     <li
@@ -424,7 +639,6 @@ export default function MyProjects({
                 }}>View profile</button>
 
                 <button onClick={()=>{
-
                   router.push(`/chats?sellerId=${project.selectedBid?.sellerId}`)
                 }}>Chat</button>
 

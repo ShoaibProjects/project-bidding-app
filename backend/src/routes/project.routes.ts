@@ -12,6 +12,8 @@ import {
   requestChanges,
   updateProjectProgress,
   reuploadDeliverable,
+  updateProjectDetails,
+  cancelProject, 
 } from "../controllers/project.controller";
 
 import upload from "../middleware/upload.middleware";
@@ -42,6 +44,9 @@ router.post("/:projectId/unselect-seller", requireAuth as RequestHandler, unsele
 // Route to mark a project as completed
 router.post("/:projectId/complete", requireAuth as RequestHandler, completeProject as RequestHandler);
 
+// ✅ Route to cancel a project
+router.post("/:projectId/cancel", requireAuth as RequestHandler, cancelProject as RequestHandler);
+
 // Route to get all projects assigned to a specific seller
 router.get("/selected-projects/seller/:sellerId", requireAuth as RequestHandler, getSelectedProjectsForSeller as RequestHandler);
 
@@ -50,6 +55,9 @@ router.get("/buyer/:buyerId", requireAuth as RequestHandler, getProjectsByBuyerI
 
 // Route to get details of a specific project
 router.get("/:projectId", requireAuth as RequestHandler, getProjectByProjectId as RequestHandler);
+
+// ✅ New route to update project details
+router.patch("/:projectId", requireAuth as RequestHandler, updateProjectDetails as RequestHandler);
 
 // Route to upload a deliverable file for a project (status → IN_REVIEW, progress → 100)
 router.post(

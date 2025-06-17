@@ -178,7 +178,7 @@ export default function ProjectList({
             </div>
 
             {/* Bid form - only show if user hasn't already placed a bid on this project */}
-            {!project.bids.some((bid) => bid.sellerName === user?.email) && (
+            {!project.bids.some((bid) => bid.sellerName === user?.email) && (user?.role == "SELLER") && (
               <div className="mt-4 border border-gray-200 bg-gray-50 rounded-lg p-4 space-y-2">
                 <h4 className="font-medium text-gray-700">Place a Bid</h4>
 

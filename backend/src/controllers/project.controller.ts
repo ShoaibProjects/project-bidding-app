@@ -411,3 +411,184 @@ export const reuploadDeliverable = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Updates the details (title, description, deadline) of a project.
+ * Only the buyer who created the project can update it.
+ * Notifies the selected seller if the project is in progress.
+ */
+export const updateProjectDetails = async (req: Request, res: Response) => {
+    try {
+        const { projectId } = req.params;
+        const { title, description, deadline } = req.body;
+        const userId = (req as any).user?.userId; // Assuming userId is attached by requireAuth middleware
+
+        // 1. Find the project and verify ownership
+        const project = await prisma.project.findUnique({
+            where: { id: projectId },
+        });
+
+        if (!project) {
+            return res.status(404).json({ error: "Project not found" });
+        }
+
+        if (project.buyerId !== userId) {
+            return res.status(403).json({ error: "You are not authorized to edit this project" });
+        }
+
+        // 2. Prepare the data for update
+        const updateData: {
+            title?: string;
+            description?: string;
+            deadline?: Date;
+            reminderSent?: boolean;
+        } = {};
+
+        if (title) updateData.title = title;
+        if (description) updateData.description = description;
+        if (deadline) {
+            updateData.deadline = new Date(deadline);
+            // Reset reminder flag so the cron job can send a new one for the new date
+            updateData.reminderSent = false;
+        }
+        
+        // Check if there is anything to update
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: "No update information provided" });
+        }
+
+        // 3. Update the project
+        const updatedProject = await prisma.project.update({
+            where: { id: projectId },
+            data: updateData,
+            include: {
+                selectedBid: {
+                    include: {
+                        seller: true,
+                    },
+                },
+            },
+        });
+
+        // 4. Notify seller if project is in progress
+        if (updatedProject.status === 'IN_PROGRESS' && updatedProject.selectedBid?.seller) {
+            const seller = updatedProject.selectedBid.seller;
+            const subject = `Project Updated: "${updatedProject.title}"`;
+            const text = `
+Hello ${seller.name || 'Seller'},
+
+The details for a project you are working on, "${updatedProject.title}", have been updated by the buyer.
+Please log in to your dashboard to review the changes.
+
+Thank you.
+            `;
+            await sendEmail(seller.email, subject, text);
+        }
+
+        res.json(updatedProject);
+    } catch (error) {
+        console.error("Error updating project details:", error);
+        res.status(500).json({ error: "Failed to update project details" });
+    }
+};
+
+/**
+ * Allows a buyer to cancel their project.
+ * Sends notification email to the selected seller if there is one.
+ * Updates project status to CANCELLED (you'll need to add this to your ProjectStatus enum).
+ */
+export const cancelProject = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const userId = (req as any).user?.userId; // Assuming userId is attached by requireAuth middleware
+
+    // 1. Find the project and verify ownership
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        selectedBid: {
+          include: {
+            seller: true,
+          },
+        },
+        buyer: true,
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // 2. Verify that the requesting user is the buyer who created the project
+    if (project.buyerId !== userId) {
+      return res.status(403).json({ error: "You are not authorized to cancel this project" });
+    }
+
+    // 3. Check if project can be cancelled (optional business logic)
+    if (project.status === "COMPLETED") {
+      return res.status(400).json({ error: "Cannot cancel a completed project" });
+    }
+
+    // 4. Update the project status to cancelled
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status: "CANCELLED", // You'll need to add this to your ProjectStatus enum
+        selectedBidId: null, // Clear the selected bid
+      },
+      include: {
+        buyer: true,
+        selectedBid: {
+          include: {
+            seller: true,
+          },
+        },
+      },
+    });
+
+    // 5. Notify the selected seller if there was one
+    if (project.selectedBid?.seller) {
+      const seller = project.selectedBid.seller;
+      const subject = `Project Cancelled: "${project.title}"`;
+      const text = `
+Hello ${seller.name || 'Seller'},
+
+We regret to inform you that the project "${project.title}" has been cancelled by the buyer.
+
+Project Details:
+- Title: ${project.title}
+- Description: ${project.description}
+- Budget: ${project.budget}
+
+If you have any questions, please contact our support team.
+
+Thank you for your understanding.
+      `;
+      
+      await sendEmail(seller.email, subject, text);
+    }
+
+    // 6. Send confirmation email to buyer
+    if (project.buyer) {
+      const subject = `Project Cancelled: "${project.title}"`;
+      const text = `
+Hello ${project.buyer.name || 'Buyer'},
+
+Your project "${project.title}" has been successfully cancelled.
+
+${project.selectedBid?.seller ? 'The selected seller has been notified about the cancellation.' : ''}
+
+Thank you for using our platform.
+      `;
+      
+      await sendEmail(project.buyer.email, subject, text);
+    }
+
+    res.json({
+      message: "Project cancelled successfully",
+      project: updatedProject,
+    });
+  } catch (error) {
+    console.error("Error cancelling project:", error);
+    res.status(500).json({ error: "Failed to cancel project" });
+  }
+};

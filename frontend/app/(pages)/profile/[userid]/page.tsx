@@ -13,6 +13,7 @@ type UserInfo = {
   email: string;
   role: Role;
   rating?: number;
+  description?: string;
 };
 
 export default function Profile() {

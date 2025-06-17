@@ -142,7 +142,7 @@ export const googleLoginUser = async (req: Request, res: Response) => {
   try {
     // Verify ID token using Firebase Admin SDK
     const decoded = await admin.auth().verifyIdToken(idToken);
-    const { uid, email, name } = decoded;
+    const { uid, email, name, picture } = decoded;
 
     if (!email) {
       return res.status(400).json({ error: "Email not available from Google" });
@@ -159,6 +159,7 @@ export const googleLoginUser = async (req: Request, res: Response) => {
           name: name || email,
           role: "BUYER", // Or ask role later
           firebaseId: uid,
+          profileImage:  picture || "https://img.freepik.com/premium-vector/user-profile-icon-flat-style-member-avatar-vector-illustration-isolated-background-human-permission-sign-business-concept_157943-15752.jpg?semt=ais_hybrid&w=740",
         },
       });
     }
@@ -178,6 +179,7 @@ export const googleLoginUser = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         name: user.name,
+        profileImage: user.profileImage,
       },
     });
   } catch (err) {
