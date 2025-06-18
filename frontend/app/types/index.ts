@@ -14,6 +14,14 @@ export type ProjectStatus =
 /** User roles in the system */
 export type Role = 'BUYER' | 'SELLER';
 
+export type Currency =
+  | "USD"
+  | "EUR"
+  | "INR"
+  | "GBP"
+  | "CAD"
+  | "AUD"
+  | "JPY";
 // ==========================
 // Core Entity Types
 // ==========================
@@ -67,6 +75,7 @@ export type Project = {
   title: string;
   description: string;
   budget: string;
+  budgetCurrency: Currency; 
   deadline: string; // ISO format
   status: ProjectStatus;
   progress?: number; // 0 to 100

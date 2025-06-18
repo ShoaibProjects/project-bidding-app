@@ -3,6 +3,19 @@
 import { useEffect, useState } from "react";
 import { createProject } from "../services/projectService";
 import { useUserStore } from "@/store/userStore";
+import { Currency } from "../types"; // ✅ 1. Import the Currency type
+
+
+// ✅ 1. Create a map from currency codes to symbols
+const currencySymbols: { [key in Currency]: string } = {
+  USD: "$",
+  EUR: "€",
+  INR: "₹",
+  GBP: "£",
+  CAD: "C$",
+  AUD: "A$",
+  JPY: "¥",
+};
 
 // Props for ProjectForm component
 type ProjectFormProps = {
@@ -30,6 +43,7 @@ export default function ProjectForm({
   // Store any error messages for display
   const [error, setError] = useState("");
 
+  // ✅ 2. Update form state to include budgetCurrency
   // Form state for input fields
   const [form, setForm] = useState({
     title: "",
@@ -38,6 +52,7 @@ export default function ProjectForm({
     deadline: "",
     buyerId: "", // will be set from logged-in user
     useCustomBudget: false,
+    budgetCurrency: "USD" as Currency, // Default to USD
   });
 
   // On user id change, set buyerId in the form and mark component as mounted
@@ -49,11 +64,13 @@ export default function ProjectForm({
   }, [user?.id]);
 
   /**
-   * Handle changes in form inputs (both text inputs and textarea)
+   * Handle changes in form inputs (inputs, textarea, and select)
    * Updates corresponding field in form state
    */
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement // ✅ Add HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -79,16 +96,19 @@ export default function ProjectForm({
     setIsSubmitting(true);
 
     try {
+      // The `form` object now includes `budgetCurrency` and will be sent to the API
       await createProject(form);
       alert("Project created!");
 
-      // Clear form inputs except buyerId
+      // Clear form inputs except buyerId and default currency
       setForm((prev) => ({
         ...prev,
         title: "",
         description: "",
-        budget: "",
+        budget: "20",
         deadline: "",
+        useCustomBudget: false,
+        budgetCurrency: "USD" as Currency, // Reset to default
       }));
 
       // Trigger refresh in parent component
@@ -135,7 +155,7 @@ export default function ProjectForm({
         required
       />
 
-      {/* Budget section with slider + custom input option for Budget input*/}
+      {/* Budget section with slider + custom input option for Budget input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Estimated Budget
@@ -158,31 +178,56 @@ export default function ProjectForm({
           </label>
         </div>
 
-        {form.useCustomBudget ? (
-          <input
-            name="budget"
-            type="number"
-            min="1"
-            className="w-full border p-2 rounded"
-            placeholder="Enter custom budget"
-            value={form.budget}
+        {/* ✅ 3. Add currency dropdown and integrate it with the budget inputs */}
+        <div className="flex items-center gap-4">
+          <select
+            name="budgetCurrency"
+            value={form.budgetCurrency}
             onChange={handleChange}
-          />
-        ) : (
-          <div>
-            <p className="text-sm mb-1">Selected: ${form.budget}</p>
-            <input
-              name="budget"
-              type="range"
-              min="5"
-              max="500"
-              step="5"
-              value={form.budget}
-              onChange={handleChange}
-              className="w-full"
-            />
+            className="border p-2 rounded bg-gray-100"
+          >
+            <option value="USD">$ (USD)</option>
+            <option value="EUR">€ (EUR)</option>
+            <option value="INR">₹ (INR)</option>
+            <option value="GBP">£ (GBP)</option>
+            <option value="CAD">C$ (CAD)</option>
+          </select>
+
+          <div className="w-full">
+            {form.useCustomBudget ? (
+                            <div className="relative w-full">
+                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                    {currencySymbols[form.budgetCurrency]}
+                  </span>
+              <input
+                name="budget"
+                type="number"
+                min="1"
+                className="w-full border p-2 rounded"
+                placeholder="Enter custom budget"
+                value={form.budget}
+                onChange={handleChange}
+              />
+                </div>
+            ) : (
+              <div className="w-full">
+                <p className="text-sm mb-1">
+                  Selected: {currencySymbols[form.budgetCurrency]} {form.budget}
+                </p>
+                <input
+                  name="budget"
+                  type="range"
+                  min="5"
+                  max="500"
+                  step="5"
+                  value={form.budget}
+                  onChange={handleChange}
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Deadline input */}

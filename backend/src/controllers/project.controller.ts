@@ -8,7 +8,7 @@ import { sendEmail } from "../services/email.service";
  */
 export const createProject = async (req: Request, res: Response) => {
   try {
-    const { title, description, budget, deadline, buyerId } = req.body;
+    const { title, description, budget, deadline, buyerId, budgetCurrency } = req.body;
 
     const project = await prisma.project.create({
       data: {
@@ -17,6 +17,7 @@ export const createProject = async (req: Request, res: Response) => {
         budget,
         deadline: new Date(deadline),
         buyerId,
+        budgetCurrency,
       },
     });
 
