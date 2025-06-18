@@ -5,7 +5,6 @@ import { createProject } from "../services/projectService";
 import { useUserStore } from "@/store/userStore";
 import { Currency } from "../types"; // ✅ 1. Import the Currency type
 
-
 // ✅ 1. Create a map from currency codes to symbols
 const currencySymbols: { [key in Currency]: string } = {
   USD: "$",
@@ -195,20 +194,20 @@ export default function ProjectForm({
 
           <div className="w-full">
             {form.useCustomBudget ? (
-                            <div className="relative w-full">
-                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                    {currencySymbols[form.budgetCurrency]}
-                  </span>
-              <input
-                name="budget"
-                type="number"
-                min="1"
-                className="w-full border p-2 rounded"
-                placeholder="Enter custom budget"
-                value={form.budget}
-                onChange={handleChange}
-              />
-                </div>
+              <div className="relative w-full">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  {currencySymbols[form.budgetCurrency]}
+                </span>
+                <input
+                  name="budget"
+                  type="number"
+                  min="1"
+                  className="w-full border p-2 rounded"
+                  placeholder="Enter custom budget"
+                  value={form.budget}
+                  onChange={handleChange}
+                />
+              </div>
             ) : (
               <div className="w-full">
                 <p className="text-sm mb-1">
