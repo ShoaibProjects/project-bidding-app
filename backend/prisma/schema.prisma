@@ -14,7 +14,7 @@ model User {
   profileImage  String? @default("https://img.freepik.com/premium-vector/user-profile-icon-flat-style-member-avatar-vector-illustration-isolated-background-human-permission-sign-business-concept_157943-15752.jpg?semt=ais_hybrid&w=740") // ✅ Default profile image URL
   email     String  @unique
   password  String?  // ✅ Made optional for Google users
-  firebaseId String? @unique // ✅ New field to store Firebase UID
+  firebaseId String? @unique
   role      Role
   bids      Bid[]
   projects  Project[] @relation("BuyerProjects")
@@ -33,7 +33,7 @@ model Project {
   title          String
   description    String
   budget         String
-  budgetCurrency Currency       @default(USD) // ✅ Enum for supported currencies
+  budgetCurrency Currency       @default(USD) 
   deadline       DateTime
   status         ProjectStatus  @default(PENDING)
   progress       Int            @default(0)
@@ -44,7 +44,7 @@ model Project {
   selectedBidId  String?        @unique // New field to track selected bid
   selectedBid    Bid?           @relation("SelectedBid", fields: [selectedBidId], references: [id])
   rating         Rating? 
-  reminderSent    Boolean       @default(false) // ✅ New field for tracking reminders
+  reminderSent    Boolean       @default(false) 
   createdAt      DateTime?      @default(now())
   updatedAt      DateTime?      @updatedAt @default(now())
        

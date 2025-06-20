@@ -8,6 +8,7 @@ interface UserInfo {
   id: string;
   role: string;
   description?: string;
+  profileImage?: string;
 }
 
 // Define the store state and actions

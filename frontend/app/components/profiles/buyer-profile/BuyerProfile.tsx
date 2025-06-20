@@ -8,6 +8,17 @@ import {
 } from "@/app/services/userService";
 import { Project, Role } from "@/app/types";
 import { useUserStore } from "@/store/userStore";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Mail,
+  Edit,
+  Camera,
+  Save,
+  X,
+  Briefcase,
+  CircleDollarSign,
+  Loader2,
+} from "lucide-react";
 
 type BuyerProfileProps = {
   id: string;
@@ -18,6 +29,7 @@ type BuyerProfileProps = {
   profileImage?: string;
 };
 
+// Main Component
 export default function BuyerProfile({
   id,
   name,
@@ -37,6 +49,7 @@ export default function BuyerProfile({
 
   useEffect(() => {
     const fetchProjects = async () => {
+      setLoading(true);
       try {
         const res = await getProjectsByBuyerId(id);
         setProjects(res.data);
@@ -46,137 +59,207 @@ export default function BuyerProfile({
         setLoading(false);
       }
     };
-
     fetchProjects();
   }, [id]);
 
   const handleProfileUpdate = async () => {
     try {
-      // 1. Update text info
-      await updateUserProfileInfo({
+      // Update text info
+      const updatedUserInfo = await updateUserProfileInfo({
         name: formName,
         description: formDescription,
       });
 
-      // 2. If image exists, upload it
+      // Update image if a new one is selected
+      let updatedImageUser = null;
       if (formProfileImage) {
         const formData = new FormData();
         formData.append("profileImage", formProfileImage);
-        await updateUserProfileImage(formData);
+        updatedImageUser = await updateUserProfileImage(formData);
       }
-
-      // 3. Reflect updates in UI
+      
+      // Update the global user state with the latest data
       setUser({
         ...user!,
-        name: formName,
-        description: formDescription,
+        name: updatedUserInfo.data.name,
+        description: updatedUserInfo.data.description,
+        profileImage: updatedImageUser?.data.profileImage ?? user?.profileImage,
       });
+      
       setEditMode(false);
+      // Consider a more elegant notification system than alert() in the future
+      alert("Profile updated successfully!");
     } catch (err) {
       console.error("Failed to update profile", err);
       alert("Update failed");
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded shadow space-y-6">
-      <h2 className="text-2xl font-bold">Buyer Profile</h2>
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    in: { opacity: 1, y: 0 },
+    out: { opacity: 0, y: -20 },
+  };
 
-      {editMode ? (
-        <div className="space-y-4">
-          <div>
-            <label className="block font-medium">Name</label>
-            <input
-              className="w-full border px-3 py-2 rounded"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block font-medium">Description</label>
-            <textarea
-              className="w-full border px-3 py-2 rounded"
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block font-medium">Profile Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              className="w-full border px-3 py-2 rounded"
-              onChange={(e) =>
-                setFormProfileImage(e.target.files?.[0] ?? null)
-              }
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleProfileUpdate}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+  return (
+    // The main container for the page content with consistent dark theme
+    <div className="bg-slate-900 min-h-screen text-slate-300 font-sans p-4 sm:p-6 lg:p-8">
+      <motion.div
+        variants={pageVariants}
+        initial="initial"
+        animate="in"
+        exit="out"
+        transition={{ duration: 0.5 }}
+        className="max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl shadow-2xl shadow-slate-900/50 p-6 sm:p-8 space-y-8"
+      >
+        <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-400 to-teal-200 bg-clip-text text-transparent pb-2">
+          Buyer Profile
+        </h1>
+
+        <AnimatePresence mode="wait">
+          {editMode ? (
+            // --- EDIT MODE ---
+            <motion.div
+              key="edit"
+              variants={pageVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
             >
-              Save
-            </button>
-            <button
-              onClick={() => setEditMode(false)}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="space-y-2">
-            <p>
-              <span className="font-medium">Name:</span> {name || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Email:</span> {email || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Description:</span>{" "}
-              {description || "No description provided."}
-            </p>
-            {profileImage && (
-              <div className="mt-2">
-                <img
-                  src={profileImage}
-                  alt="Profile"
-                  className="w-32 h-32 object-cover rounded"
+              {/* Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
+                <input
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-slate-200 placeholder:text-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
                 />
               </div>
-            )}
-          </div>
-          {isOwnProfile && (
-            <button
-              onClick={() => setEditMode(true)}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              {/* Description Input */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
+                <textarea
+                  rows={4}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-slate-200 placeholder:text-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                />
+              </div>
+              {/* Profile Image Input - Styled for a better UX */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Profile Image</label>
+                <div className="flex items-center gap-4">
+                  <label className="cursor-pointer flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 px-4 rounded-lg transition-colors">
+                    <Camera className="w-4 h-4"/>
+                    <span>Choose File</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => setFormProfileImage(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {formProfileImage && <span className="text-sm text-slate-400">{formProfileImage.name}</span>}
+                </div>
+              </div>
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={handleProfileUpdate}
+                  className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold py-2 px-5 rounded-lg transition-colors"
+                >
+                  <Save className="w-4 h-4"/> Save
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => setEditMode(false)}
+                  className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-5 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4"/> Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          ) : (
+            // --- VIEW MODE ---
+            <motion.div
+              key="view"
+              variants={pageVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              transition={{ duration: 0.3 }}
+              className="space-y-8"
             >
-              Edit Profile
-            </button>
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                {profileImage && (
+                  <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }} className="flex-shrink-0">
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-full ring-4 ring-offset-4 ring-offset-slate-800 ring-teal-500 shadow-lg"
+                    />
+                  </motion.div>
+                )}
+                <div className="text-center sm:text-left space-y-4 flex-1">
+                  <h2 className="text-3xl font-bold text-slate-100">{name || "Unnamed User"}</h2>
+                  <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-400">
+                     <Mail className="w-4 h-4 text-teal-500"/> 
+                     <span>{email || "No email provided."}</span>
+                  </div>
+                  <p className="text-slate-300 max-w-xl">
+                    {description || "No description available."}
+                  </p>
+                </div>
+              </div>
+              {isOwnProfile && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => setEditMode(true)}
+                  className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-5 rounded-lg transition-colors"
+                >
+                  <Edit className="w-4 h-4"/> Edit Profile
+                </motion.button>
+              )}
+            </motion.div>
           )}
-        </>
-      )}
+        </AnimatePresence>
 
-      <div>
-        <h3 className="text-xl font-semibold mt-6 mb-2">My Projects</h3>
-        {loading ? (
-          <p className="text-gray-500">Loading...</p>
-        ) : projects.length === 0 ? (
-          <p className="text-gray-500">You haven’t posted any projects yet.</p>
-        ) : (
-          <ul className="list-disc list-inside space-y-1">
-            {projects.map((project) => (
-              <li key={project.id}>
-                <span className="font-medium">{project.title}</span> — $
-                {project.budget}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        {/* --- PROJECTS SECTION --- */}
+        <div className="border-t border-slate-700 pt-8">
+          <h3 className="text-2xl font-semibold mb-4 text-slate-200 flex items-center gap-3">
+            <Briefcase className="text-teal-400"/> My Projects
+          </h3>
+          {loading ? (
+            <div className="flex items-center gap-2 text-slate-500"><Loader2 className="animate-spin w-5 h-5"/>Loading projects...</div>
+          ) : projects.length === 0 ? (
+            <div className="text-slate-500 bg-slate-800/70 p-4 rounded-lg">You haven’t posted any projects yet.</div>
+          ) : (
+            <motion.ul
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }}
+              className="space-y-4"
+            >
+              {projects.map((project, index) => (
+                <motion.li
+                  key={project.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05, type: "spring", stiffness: 200, damping: 20 }}
+                  className="flex items-center justify-between gap-4 bg-slate-800 hover:bg-slate-700/50 p-4 rounded-xl border border-slate-700 transition-colors"
+                >
+                  <div className="font-semibold text-slate-200">{project.title}</div>
+                  <div className="flex items-center gap-2 text-teal-400 font-bold text-sm bg-teal-500/10 px-3 py-1 rounded-full">
+                    <CircleDollarSign className="w-4 h-4"/> 
+                    <span>${project.budget.toLocaleString()}</span>
+                  </div>
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

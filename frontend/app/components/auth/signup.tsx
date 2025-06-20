@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signup } from "@/app/services/authService";
-import { SignupData } from "@/app/types";
-import { useUserStore } from "@/store/userStore";
-import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation"; // Original import
+import { signup } from "@/app/services/authService"; // Original import
+import { SignupData } from "@/app/types"; // Original import
+import { useUserStore } from "@/store/userStore"; // Original import
+import { Eye, EyeOff, ShoppingCart, Hammer } from "lucide-react";
 
 /**
  * Signup component allows users to create an account.
@@ -55,15 +55,16 @@ export default function Signup() {
       router.push(`/dashboard/${form.role.toLowerCase()}`);
     } catch (error) {
       console.error("Signup error:", error);
-      alert("Signup failed. Please try again.");
+      // alert("Signup failed. Please try again."); // Removed alert(), consider custom modal/toast in your actual app
+      console.error("Signup failed. Please try again."); // Using console.error for this environment
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md transition-all duration-300 font-outfit">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 font-inter">
+      <div className="bg-gray-800 shadow-xl rounded-2xl p-8 w-full max-w-md transition-all duration-300">
         {/* Heading */}
-        <h2 className="text-3xl font-semibold text-center mb-6 text-gray-800">
+        <h2 className="text-3xl font-semibold text-center mb-6 text-purple-400">
           Create Your Account
         </h2>
 
@@ -75,7 +76,7 @@ export default function Signup() {
             value={form.email}
             onChange={handleChange}
             placeholder="Email"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
           />
 
           {/* Password input with visibility toggle */}
@@ -86,28 +87,33 @@ export default function Signup() {
               value={form.password}
               onChange={handleChange}
               placeholder="Password"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition pr-10"
+              className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition pr-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+              className="absolute right-3 top-3 text-gray-400 hover:text-purple-300"
               aria-label="Toggle password visibility"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-
+          
+          <div className="relative">
           {/* Role selection dropdown */}
           <select
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition appearance-none"
           >
-            <option value="BUYER">Buyer</option>
-            <option value="SELLER">Seller</option>
+            <option value="BUYER" className="bg-gray-700 text-gray-100">Buyer</option>
+            <option value="SELLER" className="bg-gray-700 text-gray-100">Seller</option>
           </select>
+            <span className="absolute right-3 top-3 text-gray-400">
+    {form.role === "BUYER" ? <ShoppingCart size={20} /> : <Hammer size={20} />}
+  </span>
+  </div>
 
           {/* Remember Me checkbox */}
           <div className="flex items-center">
@@ -118,10 +124,10 @@ export default function Signup() {
               onChange={(e) =>
                 setForm({ ...form, rememberMe: e.target.checked })
               }
-              className="mr-2"
+              className="mr-2 h-4 w-4 text-purple-600 border-gray-600 rounded focus:ring-purple-500 bg-gray-700"
               id="rememberMe"
             />
-            <label htmlFor="rememberMe" className="text-sm text-gray-700">
+            <label htmlFor="rememberMe" className="text-sm text-gray-300">
               Remember Me
             </label>
           </div>
@@ -129,18 +135,18 @@ export default function Signup() {
           {/* Signup submit button */}
           <button
             onClick={handleSignup}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition duration-100 transform hover:scale-[1.02]"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition duration-100 transform hover:scale-[1.02] shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             Sign Up
           </button>
         </div>
 
         {/* Link to login page for existing users */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{" "}
           <button
             onClick={() => router.push("/auth/login")}
-            className="text-blue-600 hover:underline transition"
+            className="text-purple-500 hover:underline transition focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             Log in
           </button>

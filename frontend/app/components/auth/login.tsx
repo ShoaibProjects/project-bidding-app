@@ -40,8 +40,6 @@ export default function Login() {
    */
   const handleLogin = async () => {
     try {
-      console.log("API base:", process.env.NEXT_PUBLIC_API_BASE_URL);
-
       const res = await login(form);
 
       setUser({
@@ -53,15 +51,17 @@ export default function Login() {
       router.push(`/dashboard/${res.data.user.role.toLowerCase()}`);
     } catch (error) {
       console.error("Login error:", error);
-      alert("Login failed. Please check your credentials.");
+      // Replaced alert() with console.error as alert is not supported
+      // In a real app, you would show a custom modal or toast notification
+      console.error("Login failed. Please check your credentials.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md transition-all duration-300 font-outfit">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 font-inter">
+      <div className="bg-gray-800 shadow-xl rounded-2xl p-8 w-full max-w-md transition-all duration-300">
         {/* Header */}
-        <h2 className="text-3xl font-semibold text-center mb-6 text-gray-800">
+        <h2 className="text-3xl font-semibold text-center mb-6 text-purple-400">
           Welcome Back
         </h2>
 
@@ -74,7 +74,7 @@ export default function Login() {
             value={form.email}
             onChange={handleChange}
             placeholder="Email"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
           />
 
           {/* Password input with toggle visibility button */}
@@ -85,12 +85,12 @@ export default function Login() {
               value={form.password}
               onChange={handleChange}
               placeholder="Password"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition pr-10"
+              className="w-full p-3 border border-gray-600 rounded-lg bg-gray-700 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition pr-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+              className="absolute right-3 top-3 text-gray-400 hover:text-purple-300"
               aria-label="Toggle password visibility"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -106,10 +106,10 @@ export default function Login() {
               onChange={(e) =>
                 setForm({ ...form, rememberMe: e.target.checked })
               }
-              className="mr-2"
+              className="mr-2 h-4 w-4 text-purple-600 border-gray-600 rounded focus:ring-purple-500 bg-gray-700"
               id="rememberMe"
             />
-            <label htmlFor="rememberMe" className="text-sm text-gray-700">
+            <label htmlFor="rememberMe" className="text-sm text-gray-300">
               Remember Me
             </label>
           </div>
@@ -117,18 +117,18 @@ export default function Login() {
           {/* Login button */}
           <button
             onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition duration-100 transform hover:scale-[1.02]"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition duration-100 transform hover:scale-[1.02] shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             Log In
           </button>
         </div>
 
         {/* Signup redirect link */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-400">
           New user?{" "}
           <button
             onClick={() => router.push("/auth/signup")}
-            className="text-blue-600 hover:underline transition"
+            className="text-purple-500 hover:underline transition focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             Sign up
           </button>

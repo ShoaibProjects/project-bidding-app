@@ -1,5 +1,7 @@
 import React from "react";
-import { Conversation } from "../types";
+import { Conversation } from "../types"; // Assuming correct path for Conversation type
+import { motion, AnimatePresence } from "framer-motion";
+import { MessageSquare, User, AlertCircle } from "lucide-react";
 
 type ConversationListProps = {
   currentUserId: string;
@@ -12,35 +14,56 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   currentUserId,
   conversations,
   selectedConversationId,
-  onSelect, 
+  onSelect,
 }) => {
   return (
-    <div className="w-64 border-r overflow-auto p-4">
-      <h3 className="font-semibold text-lg mb-4">Your Chats</h3>
-      {conversations.length === 0 ? (
-        <p className="text-gray-500">No conversations found.</p>
-      ) : (
-        <ul>
-          {conversations.map((convo) => {
-            const otherUser =
-              convo.users?.find((u) => u.id !== currentUserId);
+    // Removed fixed width (w-64) as parent sidebar handles it.
+    // Updated background and border colors for dark mode.
+    <div className="flex-1 overflow-auto p-4 bg-gray-800 text-gray-100">
+      <div className="flex items-center gap-2 mb-4">
+        <MessageSquare className="w-5 h-5 text-purple-400" /> {/* Updated icon color */}
+        <h3 className="font-semibold text-lg">Your Chats</h3>
+      </div>
+      <AnimatePresence>
+        {conversations.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 text-gray-400" // Adjusted text color
+          >
+            <AlertCircle className="w-4 h-4 text-purple-300" /> {/* Updated icon color */}
+            <p>No conversations found.</p>
+          </motion.div>
+        ) : (
+          <ul className="space-y-1">
+            {conversations.map((convo) => {
+              const otherUser = convo.users?.find((u) => u.id !== currentUserId);
 
-            return (
-              <li
-                key={convo.id}
-                className={`p-2 mb-1 rounded cursor-pointer hover:bg-gray-100 ${
-                  selectedConversationId === convo.id
-                    ? "bg-gray-200 font-medium"
-                    : ""
-                }`}
-                onClick={() => onSelect(convo)}
-              >
-                {otherUser?.name || otherUser?.id || convo.otherUser?.email || "Unknown"}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+              return (
+                <motion.li
+                  key={convo.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 transition-colors duration-200
+                    ${
+                      selectedConversationId === convo.id
+                        ? "bg-purple-700 bg-opacity-30 text-white shadow-md" // Highlight selected
+                        : "hover:bg-gray-700" // Dark mode hover
+                    }`}
+                  onClick={() => onSelect(convo)}
+                >
+                  <User className="w-5 h-5 text-purple-300" /> {/* Updated icon color */}
+                  <span className="truncate text-gray-100"> {/* Ensured text is light */}
+                    {otherUser?.name || otherUser?.id || convo.otherUser?.email || "Unknown User"}
+                  </span>
+                </motion.li>
+              );
+            })}
+          </ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

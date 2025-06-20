@@ -7,3 +7,7 @@
 body {
   font-family: var(--font-outfit);
 }
+/* In your global CSS file, e.g., index.css */
+.dark-datetime-input {
+  color-scheme: dark;
+}

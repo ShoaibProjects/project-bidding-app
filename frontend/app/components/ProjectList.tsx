@@ -5,24 +5,21 @@ import { getProjects } from "../services/projectService";
 import { placeBid } from "../services/bidService";
 import { Project } from "../types";
 import { useUserStore } from "@/store/userStore";
-import { BadgeCheck, ClipboardList } from "lucide-react";
+import {
+  BadgeCheck,
+  Briefcase,
+  CalendarDays,
+  ChevronDown,
+  CircleDollarSign,
+  Gavel,
+  MessageSquare,
+  User,
+} from "lucide-react";
 import { getSortableList } from "../utils/getSortableList";
+import { AnimatePresence, motion } from "framer-motion";
+import { currencySymbols } from "./ProjectForm";
 
-// Define possible sorting options as a TypeScript union type
-type SortOption =
-  | "budget"
-  | "deadline"
-  | "recency";
-
-/**
- * ProjectList Component
- * Displays a list of open projects fetched from the backend.
- * Allows the logged-in user to place bids on projects they haven't already bid on.
- * 
- * Props:
- *  - toRefresh: boolean flag to trigger re-fetching projects (e.g. after placing a bid)
- *  - setToRefresh?: optional setter function to toggle toRefresh flag in parent component
- */
+type SortOption = "budget" | "deadline" | "recency";
 
 type BidInput = {
   amount: number;
@@ -30,6 +27,39 @@ type BidInput = {
   message: string;
 };
 
+// A more visually appealing Sort Selector component
+const SortSelector = ({
+  selected,
+  onChange,
+}: {
+  selected: SortOption;
+  onChange: (value: SortOption) => void;
+}) => {
+  const sortOptions: Record<SortOption, string> = {
+    budget: "Budget (High → Low)",
+    deadline: "Deadline (Soonest First)",
+    recency: "Recency (Newest First)",
+  };
+
+  return (
+    <div className="relative">
+      <select
+        value={selected}
+        onChange={(e) => onChange(e.target.value as SortOption)}
+        className="appearance-none cursor-pointer bg-slate-800/50 border border-slate-700 rounded-lg pl-4 pr-10 py-2 text-sm font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors hover:bg-slate-700/60"
+      >
+        {Object.entries(sortOptions).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+        <ChevronDown className="w-4 h-4" />
+      </div>
+    </div>
+  );
+};
 
 export default function ProjectList({
   toRefresh,
@@ -38,235 +68,280 @@ export default function ProjectList({
   toRefresh: boolean;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  // State to hold the list of projects fetched from backend
   const [projects, setProjects] = useState<Project[]>([]);
-
-  // State to hold the selected sorting option, default is 'recency'
   const [sortOption, setSortOption] = useState<SortOption>("recency");
-
-  // Use custom hook to get the sorted projects based on the selected sort option
-  // The hook handles sorting logic internally
-  const sortedProjects = getSortableList(projects, sortOption, "project");
-
-  // State to track bid form inputs for each project by project ID
   const [bidInputs, setBidInputs] = useState<Record<string, BidInput>>({});
-  // Get the currently logged-in user from the global store
   const { user } = useUserStore();
+  const [showBidForm, setShowBidForm] = useState(false); // State for toggling bid form visibility
+const [showExistingBids, setShowExistingBids] = useState(false); // State for toggling existing bids visibility
 
-  // Effect to fetch projects whenever 'toRefresh' changes
   useEffect(() => {
     fetchProjects();
   }, [toRefresh]);
 
-  // Fetch projects from backend API and update state
   const fetchProjects = async () => {
     const res = await getProjects();
     setProjects(res.data);
   };
 
-  /**
-   * Handles placing a bid on a specific project.
-   * Validates inputs, calls API, and refreshes project list on success.
-   * @param projectId - ID of the project being bid on
-   */
   const handleBid = async (projectId: string) => {
     const bid = bidInputs[projectId];
-
-    // Basic validation: amount, durationDays must be positive and message non-empty
     if (
-      !bid?.amount || bid.amount <= 0 ||
-      !bid?.durationDays || bid.durationDays <= 0 ||
-      !bid?.message || bid.message.trim() === ""
+      !bid?.amount ||
+      bid.amount <= 0 ||
+      !bid?.durationDays ||
+      bid.durationDays <= 0 ||
+      !bid?.message ||
+      bid.message.trim() === ""
     ) {
+      // We can improve alerts later, for now, they are kept as is.
       return alert("❗ Please enter a valid amount, duration, and message.");
     }
-
     try {
-      // Call placeBid API with bid data + projectId + seller info
       await placeBid({
         ...bid,
         projectId,
-        sellerId: user?.id? user.id : "",
-        sellerName: user?.email? user.email : "",
+        sellerId: user?.id || "",
+        sellerName: user?.email || "",
       });
-      // Toggle toRefresh flag to notify parent to refresh data (if setter provided)
       setToRefresh?.(!toRefresh);
       alert("✅ Bid placed!");
-      fetchProjects(); // Refetch projects to show updated bids
+      fetchProjects();
     } catch (err) {
       console.error(err);
       alert("❌ Failed to place bid");
     }
   };
 
-      /**
-   * SortSelector Component
-   *
-   * Renders a dropdown/select input to choose the sorting criteria.
-   * Calls `onChange` callback with the selected sort option on user change.
-   *
-   * Props:
-   * - selected: current selected sort option
-   * - onChange: function to call with new sort option
-   */
-  const SortSelector = ({
-  selected,
-  onChange,
-}: {
-  selected: SortOption;
-  onChange: (value: SortOption) => void;
-}) => {
-  // Map of sort option values to user-friendly labels
-  const sortOptions: Record<SortOption, string> = {
-    budget: "Budget (High → Low)",
-    deadline: "Deadline (Soonest First)",
-    recency: "Recency (Newest First)",
-  };
+  const sortedProjects = getSortableList(projects, sortOption, "project");
 
   return (
-    <div className="mb-4 flex items-center gap-2">
-      <label htmlFor="sort" className="text-sm font-medium">
-        Sort by:
-      </label>
-      <select
-        id="sort"
-        value={selected}
-        onChange={(e) => onChange(e.target.value as SortOption)}
-        className="border border-gray-300 rounded px-3 py-1 text-sm"
-      >
-        {Object.entries(sortOptions).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+    // Main container with a dark background and subtle aurora effect
+    <div className="min-h-screen bg-slate-900 text-slate-300 font-sans">
+      <div className="container mx-auto px-4 py-12">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10 gap-6">
+          <h1 className="text-4xl font-bold text-slate-100 flex items-center gap-4">
+            <Briefcase className="text-teal-400 w-8 h-8" />
+            Open Projects
+          </h1>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-400">Sort by:</span>
+            <SortSelector selected={sortOption} onChange={setSortOption} />
+          </div>
+        </div>
 
-  return (
-    <div className="mt-10">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <ClipboardList className="text-primary" /> Open Projects
-      </h2>
-
-      {/* Sort selector dropdown */}
-      <SortSelector selected={sortOption} onChange={setSortOption} />
-
-      <div className="grid gap-6">
-        {sortedProjects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
-          >
-            {/* Project details */}
-            <div className="space-y-2 mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">{project.title}</h3>
-              <p className="text-gray-600">{project.description}</p>
-              <p className="text-sm text-gray-500">
-                <strong>Buyer:</strong> {project.buyer?.email}
-              </p>
-              <div className="flex gap-4 text-sm text-gray-700">
-                <span>
-                  <strong>Budget:</strong> ${project.budget}
-                </span>
-                <span>
-                  <strong>Deadline:</strong>{" "}
-                  {new Date(project.deadline).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            {/* Bid form - only show if user hasn't already placed a bid on this project */}
-            {!project.bids.some((bid) => bid.sellerName === user?.email) && (user?.role == "SELLER") && (
-              <div className="mt-4 border border-gray-200 bg-gray-50 rounded-lg p-4 space-y-2">
-                <h4 className="font-medium text-gray-700">Place a Bid</h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {/* Bid amount input */}
-                  <input
-                    type="number"
-                    placeholder="Amount ($)"
-                    className="border border-gray-300 rounded px-3 py-2"
-                    onChange={(e) =>
-                      setBidInputs((prev) => ({
-                        ...prev,
-                        [project.id]: {
-                          ...prev[project.id],
-                          amount: Number(e.target.value),
-                        },
-                      }))
-                    }
-                  />
-                  {/* Bid duration input */}
-                  <input
-                    type="number"
-                    placeholder="Duration (days)"
-                    className="border border-gray-300 rounded px-3 py-2"
-                    onChange={(e) =>
-                      setBidInputs((prev) => ({
-                        ...prev,
-                        [project.id]: {
-                          ...prev[project.id],
-                          durationDays: Number(e.target.value),
-                        },
-                      }))
-                    }
-                  />
-                  {/* Bid message input */}
-                  <input
-                    placeholder="Message"
-                    className="border border-gray-300 rounded px-3 py-2"
-                    onChange={(e) =>
-                      setBidInputs((prev) => ({
-                        ...prev,
-                        [project.id]: {
-                          ...prev[project.id],
-                          message: e.target.value,
-                        },
-                      }))
-                    }
-                  />
-                </div>
-
-                <button
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2 font-medium transition duration-100 transform hover:scale-[1.02]"
-                  onClick={() => handleBid(project.id)}
-                >
-                  Submit Bid
-                </button>
-              </div>
-            )}
-
-            {/* Existing bids for the project */}
-            {project.bids.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <BadgeCheck className="text-blue-500 w-4 h-4" />
-                  Existing Bids
-                </h4>
-                <ul className="space-y-2">
-                  {project.bids.map((bid) => (
-                    <li
-                      key={bid.id}
-                      className="border border-gray-200 rounded p-3 flex justify-between items-center bg-gray-50"
-                    >
-                      <div>
-                        <span className="font-medium">{bid.sellerName}</span>{" "}
-                        <span className="text-sm text-gray-600">
-                          bid ${bid.amount} for {bid.durationDays} days
+        {/* Project Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          {sortedProjects.map((project) => (
+            <div
+              key={project.id}
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl overflow-hidden transition-all duration-300 hover:border-teal-400/50 hover:shadow-2xl hover:shadow-teal-900/50"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-slate-100 mb-2">{project.title}</h3>
+                    <p className="text-slate-400 mb-5 text-sm leading-relaxed">{project.description}</p>
+                    
+                    <div className="flex flex-col gap-3 text-sm">
+                      <div className="flex items-center text-slate-400">
+                        <User className="w-4 h-4 mr-2 text-teal-500" />
+                        <span className="font-medium text-slate-300">{project.buyer?.email}</span>
+                      </div>
+                      <div className="flex items-center text-slate-400">
+                        <CalendarDays className="w-4 h-4 mr-2 text-teal-500" />
+                        <span className="font-medium text-slate-300">
+                          {new Date(project.deadline).toLocaleString("en-US", {
+                            month: "short", day: "numeric", year: "numeric", hour: 'numeric', minute: '2-digit' 
+                          })}
                         </span>
                       </div>
-                      <span className="text-sm italic text-gray-500">
-                        &quot;{bid.message}&quot;
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-teal-400/10 text-teal-300 px-3 py-1.5 rounded-full text-sm font-semibold ring-1 ring-inset ring-teal-400/20">
+                    <CircleDollarSign className="w-4 h-4" />
+                    <span>{currencySymbols[project.budgetCurrency]}{project.budget.toLocaleString()}</span>
+                  </div>
+                </div>
+
+      {/* --- Place Bid Form --- */}
+      {!project.bids.some((bid) => bid.sellerName === user?.email) &&
+        user?.role === "SELLER" && (
+          <div className="mt-6 bg-gray-900/50 rounded-xl shadow-lg border border-gray-700">
+            <div
+              className="flex justify-between items-center p-4 cursor-pointer"
+              onClick={() => setShowBidForm(!showBidForm)}
+            >
+              <h4 className="font-semibold text-white flex items-center gap-2">
+                <Gavel className="w-5 h-5 text-sky-400" />
+                Place Your Bid
+              </h4>
+              <motion.div
+                initial={false}
+                animate={{ rotate: showBidForm ? 0 : -90 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              </motion.div>
+            </div>
+
+            <AnimatePresence>
+              {showBidForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 border-t border-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Amount Input */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                          Amount ({currencySymbols[project.budgetCurrency]})
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="2500"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                          onChange={(e) =>
+                            setBidInputs((prev) => ({
+                              ...prev,
+                              [project.id]: {
+                                ...prev[project.id],
+                                amount: Number(e.target.value),
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                      {/* Duration Input */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                          Duration (days)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="14"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                          onChange={(e) =>
+                            setBidInputs((prev) => ({
+                              ...prev,
+                              [project.id]: {
+                                ...prev[project.id],
+                                durationDays: Number(e.target.value),
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    {/* Message Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-400 mb-1">
+                        Proposal Message
+                      </label>
+                      <input
+                        placeholder="I can deliver high-quality work..."
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        onChange={(e) =>
+                          setBidInputs((prev) => ({
+                            ...prev,
+                            [project.id]: {
+                              ...prev[project.id],
+                              message: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <button
+                      className="w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-sky-500"
+                      onClick={() => handleBid(project.id)}
+                    >
+                      <Gavel className="w-4 h-4" />
+                      Submit Bid
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        ))}
+        )}
+
+      {/* --- Existing Bids List --- */}
+      {project.bids.length > 0 && (
+        <div className="mt-6 bg-gray-900/50 rounded-xl shadow-lg border border-gray-700">
+          <div
+            className="flex justify-between items-center p-4 cursor-pointer"
+            onClick={() => setShowExistingBids(!showExistingBids)}
+          >
+            <h4 className="font-semibold text-white mb-0 flex items-center gap-2">
+              <BadgeCheck className="text-emerald-400 w-5 h-5" />
+              Existing Bids ({project.bids.length})
+            </h4>
+            <motion.div
+              initial={false}
+              animate={{ rotate: showExistingBids ? 0 : -90 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            </motion.div>
+          </div>
+
+          <AnimatePresence>
+            {showExistingBids && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 border-t border-gray-700">
+                  <div className="space-y-3">
+                    {project.bids.map((bid) => (
+                      <div
+                        key={bid.id}
+                        className="bg-gray-800/60 rounded-lg p-4 border border-gray-700"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-semibold text-white">
+                              {bid.sellerName}
+                            </div>
+                            <div className="text-sm text-gray-400 mt-1">
+                              <span className="font-bold text-emerald-400">
+                                {currencySymbols[project.budgetCurrency]}{bid.amount.toLocaleString()}
+                              </span>{" "}
+                              in {bid.durationDays} days
+                            </div>
+                          </div>
+                          {/* Add any "Select Bid" button here if project.buyer is current user */}
+                        </div>
+                        {bid.message && (
+                          <div className="mt-2 text-sm text-gray-400 italic pl-3 border-l-2 border-gray-600">
+                            "{bid.message}"
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+  
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
