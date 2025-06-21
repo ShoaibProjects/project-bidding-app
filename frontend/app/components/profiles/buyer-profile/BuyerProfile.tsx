@@ -20,6 +20,16 @@ import {
   Loader2,
 } from "lucide-react";
 
+/**
+ * Props interface for BuyerProfile component
+ * @property {string} id - User ID
+ * @property {string} name - User's name
+ * @property {string} email - User's email
+ * @property {Role} role - User's role
+ * @property {string} [description] - Optional user description
+ * @property {string} [profileImage] - Optional profile image URL
+ * @property {React.Dispatch<React.SetStateAction<boolean>>} [setToRefresh] - Optional refresh trigger
+ */
 type BuyerProfileProps = {
   id: string;
   name: string;
@@ -27,16 +37,28 @@ type BuyerProfileProps = {
   role: Role;
   description?: string;
   profileImage?: string;
+  setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-// Main Component
+/**
+ * BuyerProfile component - Displays and manages buyer profile information
+ * Features:
+ * - View and edit profile details
+ * - Profile image upload
+ * - Project listing
+ * - Responsive design with animations
+ * @param {BuyerProfileProps} props - Component props
+ * @returns {React.ReactElement} The buyer profile page
+ */
 export default function BuyerProfile({
   id,
   name,
   email,
   description,
   profileImage,
+  setToRefresh,
 }: BuyerProfileProps) {
+  // State management
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -45,8 +67,10 @@ export default function BuyerProfile({
   const [formProfileImage, setFormProfileImage] = useState<File | null>(null);
   const { user, setUser } = useUserStore();
 
+  // Check if this is the current user's own profile
   const isOwnProfile = id === user?.id;
 
+  // Fetch projects when component mounts or ID changes
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
@@ -62,6 +86,9 @@ export default function BuyerProfile({
     fetchProjects();
   }, [id]);
 
+  /**
+   * Handles profile updates including text info and image
+   */
   const handleProfileUpdate = async () => {
     try {
       // Update text info
@@ -87,7 +114,7 @@ export default function BuyerProfile({
       });
       
       setEditMode(false);
-      // Consider a more elegant notification system than alert() in the future
+      setToRefresh?.((prev) => !prev);
       alert("Profile updated successfully!");
     } catch (err) {
       console.error("Failed to update profile", err);
@@ -95,6 +122,7 @@ export default function BuyerProfile({
     }
   };
 
+  // Animation variants for page transitions
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
     in: { opacity: 1, y: 0 },
@@ -102,8 +130,9 @@ export default function BuyerProfile({
   };
 
   return (
-    // The main container for the page content with consistent dark theme
+    // Main page container with dark theme
     <div className="bg-slate-900 min-h-screen text-slate-300 font-sans p-4 sm:p-6 lg:p-8">
+      {/* Animated content container */}
       <motion.div
         variants={pageVariants}
         initial="initial"
@@ -112,10 +141,12 @@ export default function BuyerProfile({
         transition={{ duration: 0.5 }}
         className="max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl shadow-2xl shadow-slate-900/50 p-6 sm:p-8 space-y-8"
       >
+        {/* Page header with gradient text */}
         <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-400 to-teal-200 bg-clip-text text-transparent pb-2">
           Buyer Profile
         </h1>
 
+        {/* Profile section with edit/view toggle */}
         <AnimatePresence mode="wait">
           {editMode ? (
             // --- EDIT MODE ---
@@ -147,7 +178,7 @@ export default function BuyerProfile({
                   onChange={(e) => setFormDescription(e.target.value)}
                 />
               </div>
-              {/* Profile Image Input - Styled for a better UX */}
+              {/* Profile Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">Profile Image</label>
                 <div className="flex items-center gap-4">
@@ -193,6 +224,7 @@ export default function BuyerProfile({
               transition={{ duration: 0.3 }}
               className="space-y-8"
             >
+              {/* Profile Display */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 {profileImage && (
                   <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }} className="flex-shrink-0">
@@ -214,6 +246,7 @@ export default function BuyerProfile({
                   </p>
                 </div>
               </div>
+              {/* Edit Button (only shown on own profile) */}
               {isOwnProfile && (
                 <motion.button
                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -235,7 +268,7 @@ export default function BuyerProfile({
           {loading ? (
             <div className="flex items-center gap-2 text-slate-500"><Loader2 className="animate-spin w-5 h-5"/>Loading projects...</div>
           ) : projects.length === 0 ? (
-            <div className="text-slate-500 bg-slate-800/70 p-4 rounded-lg">You haven’t posted any projects yet.</div>
+            <div className="text-slate-500 bg-slate-800/70 p-4 rounded-lg">You haven't posted any projects yet.</div>
           ) : (
             <motion.ul
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }}

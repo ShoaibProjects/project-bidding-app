@@ -30,7 +30,10 @@ import {
 } from "lucide-react";
 import { getSortableList } from "../utils/getSortableList";
 
-// Define possible sorting options as a TypeScript union type
+/**
+ * Type definition for sort options
+ * @typedef {"budget" | "deadline" | "recency" | "status" | "alphabetical"} SortOption
+ */
 type SortOption =
   | "budget"
   | "deadline"
@@ -38,8 +41,14 @@ type SortOption =
   | "status"
   | "alphabetical";
 
-// Helper component to render status badges with appropriate colors and icons
+/**
+ * StatusBadge component renders a styled badge indicating project status
+ * @param {Object} props - Component props
+ * @param {string} props.status - The status value to display
+ * @returns {React.ReactElement} A styled status badge with icon
+ */
 const StatusBadge = ({ status }: { status: string }) => {
+    // Mapping of status values to their display configurations
     const statusStyles: Record<string, { icon: React.ReactNode; label: string; className: string }> = {
         IN_PROGRESS: {
             icon: <RefreshCcw className="w-3 h-3" />,
@@ -68,6 +77,7 @@ const StatusBadge = ({ status }: { status: string }) => {
         },
     };
 
+    // Get the style configuration for the current status, default to PENDING if not found
     const style = statusStyles[status] || statusStyles["PENDING"];
 
     return (
@@ -78,18 +88,18 @@ const StatusBadge = ({ status }: { status: string }) => {
     );
 };
 
-
 /**
- * AssignedProjectList Component
- *
- * Displays a list of projects assigned to the logged-in seller with a modern dark-mode UI.
- * Allows uploading/re-uploading deliverables and updating project progress.
- * Shows project details, status, buyer info, and ratings if completed.
- *
- * Props:
- * - toRefresh: boolean flag to trigger data refresh
- * - setToRefresh: optional setter to update refresh flag (for child components)
- */
+ * AssignedProjectList Component
+ * 
+ * Displays a list of projects assigned to the logged-in seller with a modern dark-mode UI.
+ * Allows uploading/re-uploading deliverables and updating project progress.
+ * Shows project details, status, buyer info, and ratings if completed.
+ * 
+ * @param {Object} props - Component props
+ * @param {boolean} props.toRefresh - Flag to trigger data refresh
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} [props.setToRefresh] - Optional setter to update refresh flag
+ * @returns {React.ReactElement} The assigned projects list component
+ */
 export default function AssignedProjectList({
   toRefresh,
   setToRefresh,
@@ -97,6 +107,7 @@ export default function AssignedProjectList({
   toRefresh: boolean;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  // State management
   const [projects, setProjects] = useState<Project[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>("recency");
   const sortedProjects = getSortableList(projects, sortOption, "project");
@@ -104,10 +115,13 @@ export default function AssignedProjectList({
   const [imgLoading, setImgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUserStore();
+  
+  // State for managing editable progress
   const [editProjectIdMap, setEditProjectIdMap] = useState<Record<string, boolean>>({});
   const [editedProgressMap, setEditedProgressMap] = useState<Record<string, number>>({});
   const [selectedFileMap, setSelectedFileMap] = useState<Record<string, File | null>>({});
 
+  // Fetch projects when user ID changes or refresh is triggered
   useEffect(() => {
     if (user?.id) {
       fetchProjects(user.id);
@@ -115,7 +129,10 @@ export default function AssignedProjectList({
     // eslint-disable-next-line
   }, [user?.id, toRefresh]);
 
-  // Custom styles for the progress range input to look good in dark mode
+  /**
+   * Custom styles for the progress range input to look good in dark mode
+   * @returns {React.ReactElement} Style tag with custom range input styling
+   */
   const RangeInputStyle = () => (
     <style>{`
         .progress-range { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #374151; border-radius: 9999px; outline: none; transition: opacity 0.2s; }
@@ -124,6 +141,10 @@ export default function AssignedProjectList({
     `}</style>
   );
 
+  /**
+   * Fetches projects assigned to the current seller
+   * @param {string} sellerId - The ID of the current seller
+   */
   const fetchProjects = async (sellerId: string) => {
     try {
       setLoading(true);
@@ -138,7 +159,13 @@ export default function AssignedProjectList({
     }
   };
 
-  // A more modern, styled sort selector
+  /**
+   * SortSelector component provides a styled dropdown for sorting options
+   * @param {Object} props - Component props
+   * @param {SortOption} props.selected - Currently selected sort option
+   * @param {(value: SortOption) => void} props.onChange - Handler for sort option change
+   * @returns {React.ReactElement} A styled select dropdown for sorting
+   */
   const SortSelector = ({
     selected,
     onChange,
@@ -146,6 +173,7 @@ export default function AssignedProjectList({
     selected: SortOption;
     onChange: (value: SortOption) => void;
   }) => {
+    // Mapping of sort options to their display labels
     const sortOptions: Record<SortOption, string> = {
       recency: "Recency",
       status: "Status",
@@ -177,6 +205,7 @@ export default function AssignedProjectList({
     <div className="bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-6 lg:p-8">
       <RangeInputStyle />
       <div className="max-w-7xl mx-auto">
+        {/* Header section with title and sort controls */}
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -193,6 +222,7 @@ export default function AssignedProjectList({
           </div>
         </header>
 
+        {/* Loading state */}
         {loading && (
           <div className="flex justify-center items-center gap-3 text-gray-400 py-20">
             <Loader2 className="animate-spin w-6 h-6 text-sky-500" />
@@ -200,6 +230,7 @@ export default function AssignedProjectList({
           </div>
         )}
 
+        {/* Error state */}
         {error && (
           <div className="bg-red-900/50 border border-red-500/30 text-red-300 rounded-lg p-4 flex items-center gap-3">
             <AlertTriangle className="w-6 h-6" />
@@ -207,6 +238,7 @@ export default function AssignedProjectList({
           </div>
         )}
 
+        {/* Empty state */}
         {!loading && !error && projects.length === 0 && (
           <div className="text-center py-20 bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700">
             <Inbox className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -220,6 +252,7 @@ export default function AssignedProjectList({
           </div>
         )}
 
+        {/* Projects list */}
         <div className="grid grid-cols-1 gap-6">
           {sortedProjects.map((project) => (
             <div
@@ -289,6 +322,7 @@ export default function AssignedProjectList({
                   )}
                 </div>
                 {!editProjectIdMap[project.id] ? (
+                  // Display mode for progress
                   <div className="w-full h-2 bg-gray-700 rounded-full">
                     <div
                       className="h-2 bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all"
@@ -296,6 +330,7 @@ export default function AssignedProjectList({
                     />
                   </div>
                 ) : (
+                  // Edit mode for progress
                   <>
                     <input
                       type="range"
@@ -378,6 +413,7 @@ export default function AssignedProjectList({
                   )}
                 </div>
 
+                {/* Rating display for completed projects */}
                 {project.status === "COMPLETED" && project.rating && (
                   <div className="flex items-center gap-2">
                     <strong className="text-sm font-medium text-gray-300">
@@ -429,6 +465,7 @@ export default function AssignedProjectList({
                       </p>
                     )}
 
+                    {/* Initial upload component */}
                     {!project.deliverable && setToRefresh && (
                       <UploadDeliverable
                         projectId={project.id}
@@ -437,55 +474,50 @@ export default function AssignedProjectList({
                       />
                     )}
 
-{/* This is the new button-based re-upload section */}
-              {project.deliverable && setToRefresh && (
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  {/* 1. FILE INPUT: Now just updates the state on change */}
-                  <input
-                    type="file"
-                    accept=".jpg,.png,.mp4"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      // Store the selected file in our map, keyed by the project ID
-                      setSelectedFileMap({
-                        ...selectedFileMap,
-                        [project.id]: file,
-                      });
-                    }}
-                    className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-sky-300 hover:file:bg-gray-600 transition-colors cursor-pointer"
-                  />
-                  {/* 2. SUBMIT BUTTON: Triggers the upload */}
-                  <button
-                    onClick={async () => {
-                      const fileToUpload = selectedFileMap[project.id];
-                      if (!fileToUpload) return; // Safety check, though button is disabled
+                    {/* Re-upload section */}
+                    {project.deliverable && setToRefresh && (
+                      <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <input
+                          type="file"
+                          accept=".jpg,.png,.mp4"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setSelectedFileMap({
+                              ...selectedFileMap,
+                              [project.id]: file,
+                            });
+                          }}
+                          className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-sky-300 hover:file:bg-gray-600 transition-colors cursor-pointer"
+                        />
+                        <button
+                          onClick={async () => {
+                            const fileToUpload = selectedFileMap[project.id];
+                            if (!fileToUpload) return;
 
-                      try {
-                        setImgLoading(true)
-                        await reuploadDeliverable(project.id, fileToUpload);
-                        setToRefresh(!toRefresh); // Refresh data
-                        // Clear the selected file from state after successful upload
-                        setSelectedFileMap({
-                          ...selectedFileMap,
-                          [project.id]: null,
-                        });
-                        setImgLoading(false)
-                      } catch (err) {
-                        console.error(
-                          "Failed to re-upload deliverable",
-                          err
-                        );
-                      }
-                    }}
-                    // 3. DISABLE LOGIC: Button is disabled if no file is selected for this project
-                    disabled={!selectedFileMap[project.id] || imgLoading}
-                    className="w-full sm:w-auto flex-shrink-0 px-5 py-2.5 bg-sky-600 text-sm font-semibold text-white rounded-full hover:bg-sky-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed disabled:text-gray-400"
-                  >
-                    {!imgLoading?('Upload'):(
-                  <Loader2 className="h-5 w-5 animate-spin" />)}
-                  </button>
-                </div>
-              )}
+                            try {
+                              setImgLoading(true)
+                              await reuploadDeliverable(project.id, fileToUpload);
+                              setToRefresh(!toRefresh);
+                              setSelectedFileMap({
+                                ...selectedFileMap,
+                                [project.id]: null,
+                              });
+                              setImgLoading(false)
+                            } catch (err) {
+                              console.error(
+                                "Failed to re-upload deliverable",
+                                err
+                              );
+                            }
+                          }}
+                          disabled={!selectedFileMap[project.id] || imgLoading}
+                          className="w-full sm:w-auto flex-shrink-0 px-5 py-2.5 bg-sky-600 text-sm font-semibold text-white rounded-full hover:bg-sky-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed disabled:text-gray-400"
+                        >
+                          {!imgLoading?('Upload'):(
+                        <Loader2 className="h-5 w-5 animate-spin" />)}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
             </div>

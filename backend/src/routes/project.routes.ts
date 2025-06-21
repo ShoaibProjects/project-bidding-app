@@ -81,6 +81,7 @@ router.patch(
   updateProjectProgress as RequestHandler
 );
 
+// Route for reuploading deliverable
 router.post(
   "/:projectId/reupload",
   requireAuth as RequestHandler,

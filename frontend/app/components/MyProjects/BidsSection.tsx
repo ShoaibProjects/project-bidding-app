@@ -1,34 +1,64 @@
 // =====================================
 // components/BidsSection.tsx
+//
+// Displays and manages project bids with sorting functionality
+// Features:
+// - Sortable list of bids with multiple criteria
+// - Seller selection capability
+// - Responsive grid layout
+// - Loading states for async actions
 // =====================================
+
+import { useState } from "react";
 import { selectSeller } from "../../services/projectService";
 import { Project } from "../../types";
 import { currencySymbols } from "../ProjectForm";
-import SortSelector from "./SortSelector"; // Assuming this is a custom component
+import SortSelector from "./SortSelector";
 import { Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+/**
+ * Type definition for bid sorting options
+ * @typedef {"rating" | "budget" | "deadline" | "recency"} BidSortOption
+ */
 type BidSortOption = "rating" | "budget" | "deadline" | "recency";
 
+/**
+ * Props interface for BidsSection component
+ * @property {Project} project - The project object
+ * @property {any[]} sortedBids - Array of sorted bids
+ * @property {BidSortOption} bidSortOption - Current sort option
+ * @property {(option: BidSortOption) => void} setBidSortOption - Function to update sort option
+ * @property {React.Dispatch<React.SetStateAction<boolean>>} [setToRefresh] - Optional refresh trigger
+ */
 interface BidsSectionProps {
   project: Project;
   sortedBids: any[];
   bidSortOption: BidSortOption;
   setBidSortOption: (option: BidSortOption) => void;
-  submitting: boolean;
-  setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * BidsSection component displays and manages project bids
+ * @param {BidsSectionProps} props - Component props
+ * @returns {React.ReactElement} Bids list with sorting controls
+ */
 export default function BidsSection({
   project,
   sortedBids,
   bidSortOption,
   setBidSortOption,
-  submitting,
-  setSubmitting,
   setToRefresh,
 }: BidsSectionProps) {
+  // State for tracking submission status
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
+
+  /**
+   * Handles seller selection from bids
+   * @param {string} bidId - ID of the bid to select
+   */
   const handleSelect = async (bidId: string) => {
     try {
       setSubmitting(true);
@@ -43,6 +73,7 @@ export default function BidsSection({
     }
   };
 
+  // Sort options configuration for the dropdown
   const bidSortOptions = {
     rating: "Ratings (of Seller)",
     budget: "Budget (High → Low)",
@@ -50,15 +81,15 @@ export default function BidsSection({
     recency: "Recency (Newest First)",
   };
 
+  // Don't render if no bids, already selected, or cancelled
   if (project.bids.length === 0 || project.selectedBid || project.status === "CANCELLED") {
     return null;
   }
-  const router = useRouter();
 
   return (
-    // Main section container with modern dark styling
+    // Main section container
     <div className="mt-8">
-      {/* Header with improved layout and dark-mode text */}
+      {/* Header with title and sort controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <h4 className="text-xl font-bold text-white">Project Bids ({sortedBids.length})</h4>
         <div className="w-full sm:w-64">
@@ -71,22 +102,33 @@ export default function BidsSection({
         </div>
       </div>
 
-      {/* Grid layout for bids for better responsiveness */}
+      {/* Bids grid layout */}
       <div className="grid grid-cols-1 gap-4">
         {sortedBids.map((bid) => (
-          // Individual bid card with enhanced dark-mode styling and hover effect
+          // Individual bid card
           <div
             key={bid.id}
             className="p-4 bg-gray-800/60 rounded-xl border border-gray-700/80 shadow-lg transition-all duration-300 ease-in-out hover:border-cyan-500/50 hover:shadow-cyan-500/10"
           >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Bid details */}
               <div>
-                <h5 className="font-semibold text-lg text-gray-100 cursor-pointer" onClick={()=>{router.push(`/profile/${bid.sellerId}`)}}>{bid.sellerName}</h5>
+                {/* Clickable seller name that navigates to profile */}
+                <h5 
+                  className="font-semibold text-lg text-gray-100 cursor-pointer break-words" 
+                  onClick={() => router.push(`/profile/${bid.sellerId}`)}
+                >
+                  {bid.sellerName}
+                </h5>
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2 text-sm text-gray-400">
-                  <span className="font-semibold text-cyan-400">{currencySymbols[project.budgetCurrency]}{bid.amount.toLocaleString()}</span>
+                  <span className="font-semibold text-cyan-400">
+                    {currencySymbols[project.budgetCurrency]}{bid.amount.toLocaleString()}
+                  </span>
                   <span>{bid.durationDays} days delivery</span>
                 </div>
               </div>
+              
+              {/* Select bid button with loading state */}
               <button
                 onClick={() => handleSelect(bid.id)}
                 disabled={submitting}

@@ -1,26 +1,52 @@
 // =====================================
 // components/SelectedBidSection.tsx
+//
+// Displays information about the selected bid/seller for a project.
+// Features:
+// - Shows seller details (name, bid amount, duration)
+// - Provides actions (view profile, chat, remove seller)
+// - Handles seller removal with confirmation
+// - Dark mode compatible styling
+// - Loading states for async actions
 // =====================================
+
 import { useRouter } from "next/navigation";
 import { unselectSeller } from "../../services/projectService";
 import { Project } from "../../types";
 import { User, MessageSquare, Trash2, Loader2 } from "lucide-react";
+import { useState } from "react";
 
+/**
+ * Props interface for SelectedBidSection
+ * @property {Project} project - The project object containing bid information
+ * @property {React.Dispatch<React.SetStateAction<boolean>>} [setToRefresh] - Optional refresh trigger
+ */
 interface SelectedBidSectionProps {
   project: Project;
-  submitting: boolean;
-  setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * SelectedBidSection component displays information about the chosen seller/bid
+ * and provides interaction options.
+ * @param {SelectedBidSectionProps} props - Component props
+ * @returns {React.ReactElement} A card displaying selected bid information
+ */
 export default function SelectedBidSection({
   project,
-  submitting,
-  setSubmitting,
   setToRefresh,
 }: SelectedBidSectionProps) {
+  // State for tracking form submission status
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
+  /**
+   * Handles the removal of the selected seller from the project
+   * - Shows confirmation dialog
+   * - Calls API to unselect seller
+   * - Shows feedback alerts
+   * - Triggers refresh if successful
+   */
   const removeSelectedSeller = async () => {
     // NOTE: For a more modern UX, consider replacing confirm/alert 
     // with custom modal/toast components in the future.
@@ -42,36 +68,44 @@ export default function SelectedBidSection({
     }
   };
 
+  // Don't render if no bid is selected
   if (!project.selectedBid) return null;
 
   return (
-    // Main component card with modern dark-mode styling
+    // Main card container with modern dark mode styling
     <div className="mt-6 bg-gray-800/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700/80 shadow-lg">
       
-      {/* Header with modern badge */}
+      {/* Header section with title and status badge */}
       <div className="flex justify-between items-start mb-4">
         <h4 className="text-lg font-semibold text-white">Selected Bid</h4>
+        {/* Active status badge with subtle glow */}
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 ring-1 ring-inset ring-green-400/30">
           Active
         </span>
       </div>
 
       <div className="space-y-4">
-        {/* Seller info section with dark-mode friendly avatar and text */}
+        {/* Seller information section */}
         <div className="flex items-center">
+          {/* Seller avatar placeholder */}
           <div className="flex-shrink-0 h-11 w-11 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 font-medium border border-gray-600">
             {project.selectedBid.sellerName.charAt(0).toUpperCase()}
           </div>
+          
+          {/* Seller details */}
           <div className="ml-4">
-            <p className="text-base font-medium text-gray-100">{project.selectedBid.sellerName}</p>
+            <p className="text-base font-medium text-gray-100 truncate break-all w-1/2 md:w-full">
+              {project.selectedBid.sellerName}
+            </p>
             <p className="text-sm text-gray-400">
               ${project.selectedBid.amount.toLocaleString()} • {project.selectedBid.durationDays} days
             </p>
           </div>
         </div>
 
-        {/* Action buttons with updated dark-mode styling */}
+        {/* Action buttons */}
         <div className="flex items-center gap-2 pt-2">
+          {/* View Profile button */}
           <button
             onClick={() => router.push(`/profile/${project.selectedBid?.sellerId}`)}
             className="p-2.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-cyan-500"
@@ -80,6 +114,7 @@ export default function SelectedBidSection({
             <User className="h-5 w-5" />
           </button>
           
+          {/* Chat button */}
           <button
             onClick={() => router.push(`/chats?sellerId=${project.selectedBid?.sellerId}`)}
             className="p-2.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 focus-visible:ring-cyan-500"
@@ -88,6 +123,7 @@ export default function SelectedBidSection({
             <MessageSquare className="h-5 w-5" />
           </button>
 
+          {/* Conditionally render Remove Seller button based on project status */}
           {(project.status === "IN_PROGRESS" || 
             project.status === "IN_REVIEW" || 
             project.status === "CHANGES_REQUESTED") && (

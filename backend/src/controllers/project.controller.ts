@@ -364,6 +364,11 @@ export const updateProjectProgress = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Re-uploads a deliverable file for a project that has already had a deliverable submitted.
+ * If a deliverable exists, it updates the file URL; if not, it creates a new deliverable.
+ * The project status is set to IN_REVIEW again and the buyer is notified via email.
+ */
 export const reuploadDeliverable = async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;

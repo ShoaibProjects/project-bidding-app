@@ -9,8 +9,19 @@ import { getSelectedProjectsForSeller } from "@/app/services/projectService";
 import { Project, Role } from "@/app/types";
 import { useUserStore } from "@/store/userStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, PencilIcon, XIcon } from "lucide-react";
+import { Star, PencilIcon } from "lucide-react";
 
+/**
+ * Props interface for SellerProfile component
+ * @property {string} id - Seller's unique identifier
+ * @property {string} name - Seller's display name
+ * @property {string} email - Seller's email address
+ * @property {Role} role - Seller's role (BUYER/SELLER)
+ * @property {number} [rating] - Optional average rating
+ * @property {string} [description] - Optional profile description
+ * @property {string} [profileImage] - Optional profile image URL
+ * @property {React.Dispatch<React.SetStateAction<boolean>>} [setToRefresh] - Optional refresh trigger
+ */
 type SellerProfileProps = {
   id: string;
   name: string;
@@ -19,8 +30,18 @@ type SellerProfileProps = {
   rating?: number;
   description?: string;
   profileImage?: string;
+  setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+/**
+ * SellerProfile component displays and manages seller profile information
+ * Features:
+ * - View and edit profile details
+ * - Profile image upload
+ * - Display of assigned projects
+ * - Rating display
+ * - Responsive design with animations
+ */
 export default function SellerProfile({
   id,
   name,
@@ -28,7 +49,9 @@ export default function SellerProfile({
   rating,
   description,
   profileImage,
+  setToRefresh
 }: SellerProfileProps) {
+  // State management
   const [assignedProjects, setAssignedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -37,8 +60,10 @@ export default function SellerProfile({
   const [formProfileImage, setFormProfileImage] = useState<File | null>(null);
   const { user, setUser } = useUserStore();
 
+  // Check if current user is viewing their own profile
   const isOwnProfile = id === user?.id;
 
+  // Fetch seller's assigned projects on component mount
   useEffect(() => {
     const fetchAssignedProjects = async () => {
       try {
@@ -53,23 +78,34 @@ export default function SellerProfile({
     fetchAssignedProjects();
   }, [id]);
 
+  /**
+   * Handles profile updates including text info and image
+   */
   const handleProfileUpdate = async () => {
     try {
+      // Update text fields
       await updateUserProfileInfo({
         name: formName,
         description: formDescription,
       });
+      
+      // Update image if provided
       if (formProfileImage) {
         const formData = new FormData();
         formData.append("profileImage", formProfileImage);
         await updateUserProfileImage(formData);
       }
+      
+      // Update global user state
       setUser({
         ...user!,
         name: formName,
         description: formDescription,
       });
+      
+      // Reset edit mode and trigger refresh if needed
       setEditMode(false);
+      setToRefresh?.((prev) => !prev);
     } catch (err) {
       console.error("Failed to update profile", err);
       alert("Update failed");
@@ -77,13 +113,16 @@ export default function SellerProfile({
   };
 
   return (
+    // Main container with entrance animation
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className="max-w-4xl mx-auto mt-12 p-8 bg-gray-900 text-white rounded-2xl shadow-2xl border border-gray-700 space-y-10"
     >
+      {/* Header section with title and edit button */}
       <div className="flex justify-between items-start">
+        {/* Animated gradient title */}
         <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -92,6 +131,8 @@ export default function SellerProfile({
         >
           Seller Profile
         </motion.h2>
+        
+        {/* Edit button (only visible on own profile) */}
         {isOwnProfile && !editMode && (
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -105,8 +146,10 @@ export default function SellerProfile({
         )}
       </div>
 
+      {/* Profile section with edit/view toggle */}
       <AnimatePresence mode="wait">
         {editMode ? (
+          // --- EDIT MODE ---
           <motion.div
             key="edit"
             initial={{ opacity: 0, y: 10 }}
@@ -115,6 +158,7 @@ export default function SellerProfile({
             transition={{ duration: 0.3 }}
             className="space-y-8"
           >
+            {/* Name input field */}
             <div>
               <label className="block font-semibold text-gray-400 mb-2">Name</label>
               <input
@@ -123,6 +167,8 @@ export default function SellerProfile({
                 onChange={(e) => setFormName(e.target.value)}
               />
             </div>
+            
+            {/* Description textarea */}
             <div>
               <label className="block font-semibold text-gray-400 mb-2">Description</label>
               <textarea
@@ -131,6 +177,8 @@ export default function SellerProfile({
                 onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
+            
+            {/* Profile image upload */}
             <div>
               <label className="block font-semibold text-gray-400 mb-2">Profile Image</label>
               <input
@@ -140,6 +188,8 @@ export default function SellerProfile({
                 onChange={(e) => setFormProfileImage(e.target.files?.[0] ?? null)}
               />
             </div>
+            
+            {/* Action buttons */}
             <div className="flex gap-4">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -160,6 +210,7 @@ export default function SellerProfile({
             </div>
           </motion.div>
         ) : (
+          // --- VIEW MODE ---
           <motion.div
             key="view"
             initial={{ opacity: 0, y: 10 }}
@@ -168,7 +219,9 @@ export default function SellerProfile({
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
+            {/* Profile display */}
             <div className="flex flex-col md:flex-row md:items-center gap-8">
+              {/* Profile image with hover effect */}
               {profileImage && (
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -182,9 +235,13 @@ export default function SellerProfile({
                   />
                 </motion.div>
               )}
+              
+              {/* Profile details */}
               <div className="space-y-4">
                 <p className="text-2xl font-bold">{name || "N/A"}</p>
                 <p className="text-gray-400">{email || "N/A"}</p>
+                
+                {/* Rating display */}
                 {rating !== null && (
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-gray-300">Average Rating:</span>
@@ -194,6 +251,7 @@ export default function SellerProfile({
                     </div>
                   </div>
                 )}
+                
                 <p className="text-gray-300 max-w-lg">
                   {description || "No description provided."}
                 </p>
@@ -203,6 +261,7 @@ export default function SellerProfile({
         )}
       </AnimatePresence>
 
+      {/* Assigned projects section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -212,6 +271,8 @@ export default function SellerProfile({
         <h3 className="text-3xl font-semibold mb-6 text-gray-200">
           Assigned Projects
         </h3>
+        
+        {/* Loading/empty state handling */}
         {loading ? (
           <motion.div className="text-gray-500">
             Loading assigned projects...
@@ -221,6 +282,7 @@ export default function SellerProfile({
             <p className="text-gray-400">No projects have been assigned yet.</p>
           </motion.div>
         ) : (
+          // Projects list with animations
           <motion.ul
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

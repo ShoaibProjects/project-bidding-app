@@ -1,45 +1,51 @@
-import bcrypt from "bcrypt"; // For password hashing
-import { Request, Response } from "express"; // For type safety in Express routes
-import prisma from "../utils/prisma"; // Prisma client instance for DB interaction
-import jwt from "jsonwebtoken"; // For generating JWTs
-import admin from "../config/firebase"; // Firebase Admin instance
+// =====================================
+// controllers/authController.ts
+// =====================================
 
-// Use environment variable for JWT secret, fallback to default for development
+import bcrypt from "bcrypt";
+import { Request, Response } from "express";
+import prisma from "../utils/prisma"; // Prisma client instance
+import jwt from "jsonwebtoken";
+import admin from "../config/firebase"; // Firebase Admin SDK
+
+// Use environment variable for JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
 /**
- * Signup a new user.
- * Validates input, checks for existing user, hashes password, stores user in DB,
- * and returns a JWT token with basic user info.
+ * ======================
+ * Signup a New User
+ * ======================
+ * Validates input, hashes password, saves user to DB,
+ * and returns a JWT token with user info.
  */
 export const signupUser = async (req: Request, res: Response) => {
   try {
     const { email, password, role, rememberMe } = req.body;
 
-    // Basic validation
+    // Required field validation
     if (!email || !password || !role) {
-      return res
-        .status(400)
-        .json({ error: "Email, password, and role are required." });
+      return res.status(400).json({
+        error: "Email, password, and role are required.",
+      });
     }
 
-    // Role must be either BUYER or SELLER
+    // Validate role
     if (!["BUYER", "SELLER"].includes(role)) {
       return res.status(400).json({ error: "Invalid role." });
     }
 
-    // Check if user with the given email already exists
+    // Check for existing user
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return res
-        .status(409)
-        .json({ error: "User with this email already exists." });
+      return res.status(409).json({
+        error: "User with this email already exists.",
+      });
     }
 
-    // Hash password using bcrypt
+    // Hash the password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user in database
+    // Create user
     const user = await prisma.user.create({
       data: { email, password: hashedPassword, role },
     });
@@ -51,63 +57,77 @@ export const signupUser = async (req: Request, res: Response) => {
       { expiresIn: rememberMe ? "30d" : "1d" }
     );
 
-    // Send response with token and user info (excluding password)
     res.status(201).json({
       message: "User created successfully.",
       token,
       user: {
+        id: user.id,
         email: user.email,
         role: user.role,
-        id: user.id,
       },
     });
   } catch (error) {
-    console.error("CreateUser Error:", error);
+    console.error("Signup Error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
 /**
- * Login an existing user.
- * Validates credentials, compares password, and returns a JWT token on success.
+ * ======================
+ * Login an Existing User
+ * ======================
+ * Validates credentials, checks password, and returns a JWT token.
  */
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password, rememberMe } = req.body;
 
-  // Find user by email
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return res.status(401).json({ error: "Invalid email or password." });
+  try {
+    // Fetch user by email
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    if (!user.password) {
+      return res.status(400).json({
+        error: "This account does not have a password. Try logging in with Google.",
+      });
+    }
+
+    // Compare hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: rememberMe ? "30d" : "1d" }
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ error: "Internal server error." });
   }
-
-  if (!user.password) {
-  return res.status(400).json({ error: "This account does not have a password. Try logging in with Google." });
-}
-  // Compare provided password with stored hashed password
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(401).json({ error: "Invalid email or password." });
-  }
-
-  // Generate JWT token
-  const token = jwt.sign(
-    { userId: user.id, role: user.role },
-    JWT_SECRET,
-    { expiresIn: rememberMe ? "30d" : "1d" }
-  );
-
-  // Return token and user info
-  res.status(200).json({
-    token,
-    user: {
-      email: user.email,
-      role: user.role,
-      id: user.id,
-    },
-  });
 };
 
-// controllers/authController.ts
+/**
+ * ======================
+ * Get Current Authenticated User
+ * ======================
+ * Used for auto-login or protected routes.
+ */
 export const getCurrentUser = async (req: Request, res: Response) => {
   const { userId } = (req as any).user;
 
@@ -122,15 +142,18 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ user });
-  } catch (err) {
-    console.error("Auto-login error:", err);
+  } catch (error) {
+    console.error("Get User Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
 /**
- * Handle Google login using Firebase ID token.
- * Verifies token, creates/fetches user, and returns JWT.
+ * ======================
+ * Login / Signup with Google (Firebase)
+ * ======================
+ * Verifies ID token via Firebase Admin SDK.
+ * Creates user if not exists, and returns JWT token.
  */
 export const googleLoginUser = async (req: Request, res: Response) => {
   const { idToken } = req.body;
@@ -140,7 +163,7 @@ export const googleLoginUser = async (req: Request, res: Response) => {
   }
 
   try {
-    // Verify ID token using Firebase Admin SDK
+    // Verify token with Firebase
     const decoded = await admin.auth().verifyIdToken(idToken);
     const { uid, email, name, picture } = decoded;
 
@@ -148,23 +171,25 @@ export const googleLoginUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email not available from Google" });
     }
 
-    // Try finding existing user
+    // Check if user exists
     let user = await prisma.user.findUnique({ where: { email } });
 
-    // If user doesn't exist, create one (default to BUYER role)
+    // If not, create new user (default role: BUYER)
     if (!user) {
       user = await prisma.user.create({
         data: {
           email,
           name: name || email,
-          role: "BUYER", // Or ask role later
+          role: "BUYER", // Can be changed later in onboarding
           firebaseId: uid,
-          profileImage:  picture || "https://img.freepik.com/premium-vector/user-profile-icon-flat-style-member-avatar-vector-illustration-isolated-background-human-permission-sign-business-concept_157943-15752.jpg?semt=ais_hybrid&w=740",
+          profileImage:
+            picture ||
+            "https://img.freepik.com/premium-vector/user-profile-icon-flat-style-member-avatar-vector-illustration-isolated-background-human-permission-sign-business-concept_157943-15752.jpg?semt=ais_hybrid&w=740",
         },
       });
     }
 
-    // Generate JWT token
+    // Create JWT
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
@@ -182,8 +207,8 @@ export const googleLoginUser = async (req: Request, res: Response) => {
         profileImage: user.profileImage,
       },
     });
-  } catch (err) {
-    console.error("Google login error:", err);
+  } catch (error) {
+    console.error("Google login error:", error);
     res.status(401).json({ error: "Invalid or expired ID token" });
   }
 };

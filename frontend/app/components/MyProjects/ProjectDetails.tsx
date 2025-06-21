@@ -1,15 +1,38 @@
 // =====================================
 // components/ProjectDetails.tsx
+//
+// Displays key project information in a clean, responsive layout.
+// Features:
+// - Budget with currency formatting
+// - Formatted deadline date/time
+// - Status badge with dynamic styling
+// - Responsive design (mobile and desktop)
+// - Consistent spacing and typography
 // =====================================
+
 import { Project, ProjectStatus } from "../../types";
 import { Clock, DollarSign, Zap } from 'lucide-react';
 import { currencySymbols } from "../ProjectForm";
 
+/**
+ * Props interface for ProjectDetails component
+ * @property {Project} project - The project object containing details to display
+ */
 interface ProjectDetailsProps {
   project: Project;
 }
 
+/**
+ * ProjectDetails component displays key project information in a structured format.
+ * @param {ProjectDetailsProps} props - Component props
+ * @returns {React.ReactElement} A section displaying project details
+ */
 export default function ProjectDetails({ project }: ProjectDetailsProps) {
+  /**
+   * Formats a date string into a readable format
+   * @param {string} date - ISO date string
+   * @returns {string} Formatted date string (e.g. "Jan 1, 2023, 2:30 PM")
+   */
   const formatDate = (date: string) => 
     new Date(date).toLocaleString("en-US", {
       year: 'numeric',
@@ -20,7 +43,11 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
       hour12: true,
     });
 
-  // A helper to get modern, color-coded styles for different statuses
+  /**
+   * Returns Tailwind classes for styling based on project status
+   * @param {ProjectStatus} status - The project status
+   * @returns {string} Tailwind classes for the status badge
+   */
   const getStatusStyles = (status: ProjectStatus) => {
     switch (status) {
       case "PENDING":
@@ -38,6 +65,15 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
     }
   };
 
+  /**
+   * Array of detail items to display
+   * Each item contains:
+   * - icon: React element
+   * - label: Display text
+   * - value: Formatted value or React element
+   * - valueClass: Optional Tailwind classes for value styling
+   * - isBadge: Flag for badge-style rendering
+   */
   const detailItems = [
     {
       icon: <DollarSign size={16} className="text-slate-500" />,
@@ -49,7 +85,7 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
       icon: <Clock size={16} className="text-slate-500" />,
       label: "Deadline",
       value: formatDate(project.deadline),
-      valueClass: "text-slate-300",
+      valueClass: "text-slate-300 text-right sm:text-left", // Right-aligned on mobile, left on desktop
     },
     {
       icon: <Zap size={16} className="text-slate-500" />,
@@ -59,27 +95,41 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
           {project.status.replace("_", " ")}
         </span>
       ),
-      isBadge: true, // Flag to prevent adding extra classes to the badge container
+      isBadge: true,
     },
   ];
 
   return (
-    // This container is now clean, inheriting its style from ProjectCard
-    <div className="space-y-4">
-      <h4 className="text-lg font-semibold text-slate-200 mb-2">Project Details</h4>
-      {detailItems.map((item, index) => (
-        <div key={index} className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3">
-            {item.icon}
-            <span className="text-slate-400 font-medium">{item.label}:</span>
+    <div className="flex-grow">
+      {/* Section heading */}
+      <h4 className="text-lg font-semibold text-slate-200 mb-4">Project Details</h4>
+      
+      {/* Details list container with consistent spacing */}
+      <div className="space-y-3">
+        {detailItems.map((item, index) => (
+          /* Responsive item container:
+             - Mobile: Vertical stack (flex-col)
+             - Desktop: Horizontal layout (sm:flex-row) with space between
+          */
+          <div 
+            key={index} 
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 text-sm"
+          >
+            {/* Left side - icon and label */}
+            <div className="flex items-center gap-3">
+              {item.icon}
+              <span className="text-slate-400 font-medium">{item.label}:</span>
+            </div>
+
+            {/* Right side - value or badge */}
+            {item.isBadge ? (
+              <div className="self-start sm:self-center">{item.value}</div>
+            ) : (
+              <span className={item.valueClass}>{item.value}</span>
+            )}
           </div>
-          {item.isBadge ? (
-            item.value
-          ) : (
-            <span className={item.valueClass}>{item.value}</span>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

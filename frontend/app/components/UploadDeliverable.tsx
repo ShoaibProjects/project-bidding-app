@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { uploadDeliverable } from "../services/projectService";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Upload, File, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface UploadDeliverableProps {

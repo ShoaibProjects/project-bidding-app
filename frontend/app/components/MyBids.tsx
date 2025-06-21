@@ -1,10 +1,11 @@
 "use client";
 
+// Import necessary hooks and components from React and other libraries.
 import { useEffect, useState } from "react";
-import { getBidsBySeller } from "../services/bidService";
-import { Bid } from "../types";
-import { useUserStore } from "@/store/userStore";
-import { motion, AnimatePresence } from "framer-motion";
+import { getBidsBySeller } from "../services/bidService"; // Service function to fetch bids.
+import { Bid } from "../types"; // Type definitions for the application.
+import { useUserStore } from "@/store/userStore"; // Global state management for user data.
+import { motion, AnimatePresence } from "framer-motion"; // For animations.
 import {
   Loader2,
   CheckCircle2,
@@ -13,20 +14,24 @@ import {
   Clock,
   DollarSign,
   MessageSquare,
-  AlertCircle,
-  Inbox, // Added Inbox for empty state
-  User, // Added User icon for buyer
-  Eye, // Added Eye icon for In Review status
-  RefreshCcw, // Added for In Progress
-  FileCheck2, // Added for Completed
-  AlertTriangle, // Added for Changes Requested
-  FileClock, // Added for Pending
-} from "lucide-react";
-import { currencySymbols } from "./ProjectForm";
+  Inbox,
+  User,
+  Eye,
+  RefreshCcw,
+  AlertTriangle,
+  FileClock,
+} from "lucide-react"; // Icon library.
+import { currencySymbols } from "./ProjectForm"; // Shared currency symbols map.
 
-// Helper component to render status badges with appropriate colors and icons
-// Copied directly from your AssignedProjectList for consistency
+/**
+ * @component StatusBadge
+ * @description A helper component to render a styled badge for different project statuses.
+ * @param {{ status: string }} props - The props for the component.
+ * @param {string} props.status - The project status string (e.g., "IN_PROGRESS").
+ * @returns {React.ReactElement} A styled div element representing the status badge.
+ */
 const StatusBadge = ({ status }: { status: string }) => {
+  // A record mapping each status to its corresponding icon, label, and Tailwind CSS classes.
   const statusStyles: Record<
     string,
     { icon: React.ReactNode; label: string; className: string }
@@ -58,6 +63,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     },
   };
 
+  // Select the appropriate style object based on the status prop, or default to "PENDING" if not found.
   const style = statusStyles[status] || statusStyles["PENDING"];
 
   return (
@@ -71,40 +77,51 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 /**
- * MyBidsList Component
- *
- * Displays a list of bids placed by the logged-in seller on various projects.
- * Shows bid details along with related project info in a modern dark mode UI.
- *
- * Props:
- * - toRefresh: boolean flag to trigger re-fetching of bids when updated externally.
+ * @component MyBidsList
+ * @description Displays a list of all bids placed by the currently logged-in seller.
+ * It fetches the seller's bids and renders them in an interactive, card-based UI.
+ * The component handles its own loading and empty states.
+ * @param {{ toRefresh: boolean }} props - Component props.
+ * @param {boolean} props.toRefresh - A flag that, when its value changes, triggers a re-fetch of the bid data.
+ * @returns {React.ReactElement} The rendered list of bids or a state indicator (loading/empty).
  */
 export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
-  // Get currently logged-in user from global state/store
+  // State from global store: Retrieves the current user's data.
   const { user } = useUserStore();
+  // Local component state: `bids` stores the array of fetched bid objects.
   const [bids, setBids] = useState<Bid[]>([]);
+  // Local component state: `loading` tracks the data fetching status.
   const [loading, setLoading] = useState(true);
 
-  // Effect: fetch bids when user ID or refresh flag changes
-  useEffect(() => {
-    if (user?.id) {
-      fetchBids(user.id);
-    }
-  }, [user?.id, toRefresh]);
-
+  /**
+   * @function fetchBids
+   * @description Asynchronously fetches bids for a specific seller and updates the component's state.
+   * @param {string} sellerId - The unique identifier of the seller.
+   */
   const fetchBids = async (sellerId: string) => {
     try {
-      setLoading(true);
+      setLoading(true); // Set loading to true before starting the fetch.
       const res = await getBidsBySeller(sellerId);
-      setBids(res.data);
+      setBids(res.data); // Update the bids state with the fetched data.
     } catch (error) {
+      // Log any errors that occur during the fetch operation.
       console.error("Failed to fetch bids:", error);
     } finally {
+      // Ensure loading is set to false after the fetch completes (either success or failure).
       setLoading(false);
     }
   };
+  
+  // React Effect Hook: This runs when the component mounts and whenever `user.id` or `toRefresh` changes.
+  useEffect(() => {
+    // Only fetch bids if a valid user ID is available.
+    if (user?.id) {
+      fetchBids(user.id);
+    }
+  }, [user?.id, toRefresh]); // Dependencies array for the effect.
 
-  // Loading state UI
+  // --- Conditional Rendering: Loading State ---
+  // If data is currently being fetched, display a loading spinner.
   if (loading) {
     return (
       <div className="bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-6 lg:p-8 flex justify-center items-center">
@@ -120,7 +137,8 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
     );
   }
 
-  // Empty state UI when no bids found
+  // --- Conditional Rendering: Empty State ---
+  // If fetching is complete and there are no bids, display a user-friendly message.
   if (bids.length === 0) {
     return (
       <div className="bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-6 lg:p-8 flex justify-center items-center">
@@ -140,10 +158,12 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
     );
   }
 
-  // Render list of bids with project info and bid details
+  // --- Main Render Logic ---
+  // Render the list of bid cards if bids exist.
   return (
     <div className="bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -156,9 +176,11 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
           </div>
         </header>
 
+        {/* Grid container for the bid cards */}
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence>
             {bids.map((bid) => (
+              // Each bid card is a motion.div for entry/exit animations.
               <motion.div
                 key={bid.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -167,7 +189,7 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
                 transition={{ duration: 0.3 }}
                 className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg transition-all duration-300 hover:border-sky-500/50 hover:shadow-sky-500/10 flex flex-col"
               >
-                {/* Project Details Section */}
+                {/* --- Project Details Section --- */}
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
                     <div>
@@ -178,10 +200,12 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
                         {bid.project?.description}
                       </p>
                     </div>
+                    {/* Conditionally render the status badge if project status is available */}
                     {bid.project?.status && (
                       <StatusBadge status={bid.project.status} />
                     )}
                   </div>
+                  {/* Project metadata */}
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-sm text-gray-400">
                     <span className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-500" />{" "}
@@ -207,7 +231,8 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
                   </div>
                 </div>
 
-                {/* "Got Selected" Indicator */}
+                {/* --- "Got Selected" Indicator --- */}
+                {/* This block renders only if the current bid is the one selected for the project. */}
                 {bid.project?.selectedBidId === bid.id && (
                   <div className="px-6 py-4 bg-emerald-900/40 border-t border-emerald-700/50 text-emerald-400 font-semibold flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5" />
@@ -215,7 +240,7 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
                   </div>
                 )}
 
-                {/* Your Bid Details Section */}
+                {/* --- Your Bid Details Section --- */}
                 <div className="px-6 py-4 bg-gray-800/50 border-t border-gray-700/50 rounded-b-xl">
                   <h4 className="font-semibold text-white flex items-center gap-2 mb-3">
                     <FileText className="w-4 h-4 text-sky-400" />

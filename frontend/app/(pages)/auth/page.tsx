@@ -1,4 +1,4 @@
-"use client"; // Client-side React component in Next.js app directory
+"use client"; 
 
 import { motion } from "framer-motion";
 import GoogleLoginButton from "@/app/components/auth/loginBtn";
