@@ -151,12 +151,11 @@ testDbConnection();
 // ------------------------------------
 // Local Development Server
 // ------------------------------------
-if (process.env.NODE_ENV !== "production") {
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log("📡 Socket.IO server ready");
-  });
-}
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log("📡 Socket.IO server ready");
+});
+
 
 // ------------------------------------
 // Export for Serverless / Vercel
