@@ -10,6 +10,7 @@ import { Project, Role } from "@/app/types";
 import { useUserStore } from "@/store/userStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, PencilIcon } from "lucide-react";
+import Image from "next/image";
 
 /**
  * Props interface for SellerProfile component
@@ -24,7 +25,7 @@ import { Star, PencilIcon } from "lucide-react";
  */
 type SellerProfileProps = {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   role: Role;
   rating?: number;
@@ -228,7 +229,7 @@ export default function SellerProfile({
                   transition={{ type: "spring", stiffness: 300 }}
                   className="flex-shrink-0"
                 >
-                  <img
+                  <Image
                     src={profileImage}
                     alt="Profile"
                     className="w-36 h-36 object-cover rounded-full border-4 border-purple-500 shadow-lg"

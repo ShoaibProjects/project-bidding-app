@@ -37,7 +37,7 @@ export type User = {
   description?: string; 
   profileImage?: string;
   email: string;
-  password: string;
+  password?: string;
   role: Role;
   rating?: number; // Average rating received by the seller
   bids?: Bid[]; // Bids placed by the seller

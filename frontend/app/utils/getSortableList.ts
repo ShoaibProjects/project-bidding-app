@@ -22,19 +22,31 @@ export function getSortableList<T extends Project | Bid>(
   return list.sort((a, b) => {
     switch (sortOption) {
       case "budget":
-        // Sort by budget in descending order
-        return parseFloat((b as any).budget) - parseFloat((a as any).budget);
+        // Type guard to ensure we're working with Projects or Bids that have a budget
+        if ('budget' in a && 'budget' in b) {
+          // Sort by budget in descending order
+          return parseFloat(String(b.budget)) - parseFloat(String(a.budget));
+        }
+        return 0;
 
       case "deadline":
-        // Sort by nearest deadline (earliest first)
-        return (
-          new Date((a as any).deadline).getTime() -
-          new Date((b as any).deadline).getTime()
-        );
+        // Type guard to ensure we're working with Projects that have a deadline
+        if (entityType === "project" && 'deadline' in a && 'deadline' in b) {
+          // Sort by nearest deadline (earliest first)
+          return (
+            new Date((a as Project).deadline).getTime() -
+            new Date((b as Project).deadline).getTime()
+          );
+        }
+        return 0;
 
       case "recency":
-        // Sort by creation date (most recent first)
-        return (b as any).createdAt?.localeCompare((a as any).createdAt) ?? 0;
+        // Type guard for createdAt property
+        if ('createdAt' in a && a.createdAt && 'createdAt' in b && b.createdAt) {
+          // Sort by creation date (most recent first)
+          return b.createdAt.localeCompare(a.createdAt);
+        }
+        return 0;
 
       case "status":
         // Define custom sort order for project statuses
@@ -45,13 +57,21 @@ export function getSortableList<T extends Project | Bid>(
           COMPLETED: 3,
           CANCELLED: 4
         };
-        return (
-          statusOrder[(a as any).status] - statusOrder[(b as any).status]
-        );
+        // Type guard for status property, assuming it's on Project
+        if (entityType === "project" && 'status' in a && 'status' in b) {
+          return (
+            statusOrder[(a as Project).status] - statusOrder[(b as Project).status]
+          );
+        }
+        return 0;
 
       case "alphabetical":
-        // Sort alphabetically by project title
-        return (a as any).title?.localeCompare((b as any).title) ?? 0;
+        // Type guard for title property, assuming it's on Project
+        if (entityType === "project" && 'title' in a && a.title && 'title' in b && b.title) {
+          // Sort alphabetically by project title
+          return a.title.localeCompare(b.title);
+        }
+        return 0;
 
       case "sellerRating":
         // Sort bids by seller's rating (highest first)

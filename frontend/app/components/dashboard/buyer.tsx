@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode, JSX, useEffect } from 'react';
+import { useState, ReactNode, JSX } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiHome, FiBriefcase, FiPlusCircle, FiUser, FiMessageSquare, FiMenu, FiX } from 'react-icons/fi';
 import { useUserStore } from '@/store/userStore';

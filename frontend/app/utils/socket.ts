@@ -1,11 +1,42 @@
 import { io, Socket } from 'socket.io-client';
 import { Conversation, Message } from '@/app/types'; // Make sure to import your types
 
-// Define a type for the data payload when a new conversation is created
+// --- Type Definitions for Socket Payloads ---
+
+// Data for a new conversation
 interface NewConversationData {
   conversation: Conversation;
   participants: string[];
 }
+
+// Data for a new message notification
+interface NewMessageNotificationData {
+  conversationId: string;
+  message: Message;
+}
+
+// Data for user typing events
+interface UserTypingData {
+  conversationId: string;
+  userId: string;
+}
+
+// Data for when messages are marked as read
+interface MessagesReadData {
+  conversationId: string;
+  userId: string;
+  messageIds: string[]; // Assuming the backend sends the IDs of read messages
+}
+
+// Data for user status changes
+interface UserStatusChangeData {
+  userId: string;
+  isOnline: boolean;
+}
+
+// Type for the content of a new message being sent
+type NewMessagePayload = Omit<Message, 'id' | 'createdAt' | 'updatedAt' | 'readBy'>;
+
 
 class SocketService {
   private socket: Socket | null = null;
@@ -63,7 +94,7 @@ class SocketService {
     this.socket?.emit('leave_conversation', conversationId);
   }
 
-  public sendMessage(conversationId: string, message: any): void {
+  public sendMessage(conversationId: string, message: NewMessagePayload): void {
     this.socket?.emit('send_message', { conversationId, message });
   }
 
@@ -80,10 +111,10 @@ class SocketService {
     this.socket?.on('new_conversation_created', callback);
   }
 
-  public onNewMessageNotification(callback: (data: any) => void): void {
+  public onNewMessageNotification(callback: (data: NewMessageNotificationData) => void): void {
     this.socket?.on('new_message_notification', callback);
   }
-  
+
   public startTyping(conversationId: string, userId: string): void {
     this.socket?.emit('typing_start', { conversationId, userId });
   }
@@ -92,7 +123,7 @@ class SocketService {
     this.socket?.emit('typing_stop', { conversationId, userId });
   }
 
-  public onUserTyping(callback: (data: any) => void): void {
+  public onUserTyping(callback: (data: UserTypingData) => void): void {
     this.socket?.on('user_typing', callback);
   }
 
@@ -100,15 +131,15 @@ class SocketService {
     this.socket?.emit('mark_messages_read', { conversationId, userId });
   }
 
-  public onMessagesRead(callback: (data: any) => void): void {
+  public onMessagesRead(callback: (data: MessagesReadData) => void): void {
     this.socket?.on('messages_read', callback);
   }
-  
+
   public setUserOnline(userId: string): void {
     this.socket?.emit('user_online', userId);
   }
 
-  public onUserStatusChange(callback: (data: any) => void): void {
+  public onUserStatusChange(callback: (data: UserStatusChangeData) => void): void {
     this.socket?.on('user_status_change', callback);
   }
 

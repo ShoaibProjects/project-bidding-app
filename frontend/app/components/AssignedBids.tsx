@@ -126,7 +126,6 @@ export default function AssignedProjectList({
     if (user?.id) {
       fetchProjects(user.id);
     }
-    // eslint-disable-next-line
   }, [user?.id, toRefresh]);
 
   /**
@@ -246,7 +245,7 @@ export default function AssignedProjectList({
               No Assigned Projects
             </h3>
             <p className="text-gray-400 mt-1">
-              Your assigned projects will appear here once you're selected by a
+              Your assigned projects will appear here once you&apos;re selected by a
               buyer.
             </p>
           </div>

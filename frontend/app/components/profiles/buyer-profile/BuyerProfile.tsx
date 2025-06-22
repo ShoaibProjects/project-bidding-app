@@ -9,6 +9,7 @@ import {
 import { Project, Role } from "@/app/types";
 import { useUserStore } from "@/store/userStore";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   Mail,
   Edit,
@@ -32,7 +33,7 @@ import {
  */
 type BuyerProfileProps = {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   role: Role;
   description?: string;
@@ -228,7 +229,7 @@ export default function BuyerProfile({
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 {profileImage && (
                   <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }} className="flex-shrink-0">
-                    <img
+                    <Image
                       src={profileImage}
                       alt="Profile"
                       className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-full ring-4 ring-offset-4 ring-offset-slate-800 ring-teal-500 shadow-lg"
@@ -268,7 +269,7 @@ export default function BuyerProfile({
           {loading ? (
             <div className="flex items-center gap-2 text-slate-500"><Loader2 className="animate-spin w-5 h-5"/>Loading projects...</div>
           ) : projects.length === 0 ? (
-            <div className="text-slate-500 bg-slate-800/70 p-4 rounded-lg">You haven't posted any projects yet.</div>
+            <div className="text-slate-500 bg-slate-800/70 p-4 rounded-lg">You haven&apos;t posted any projects yet.</div>
           ) : (
             <motion.ul
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }}

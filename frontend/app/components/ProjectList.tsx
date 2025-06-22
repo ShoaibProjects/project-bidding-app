@@ -371,7 +371,7 @@ export default function ProjectList({
                                   </div>
                                   {bid.message && (
                                     <div className="mt-2 text-sm text-gray-400 italic pl-3 border-l-2 border-gray-600">
-                                      "{bid.message}"
+                                      &quot;{bid.message}&quot;
                                     </div>
                                   )}
                                 </div>

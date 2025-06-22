@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { selectSeller } from "../../services/projectService";
-import { Project } from "../../types";
+import { Project, Bid } from "../../types";
 import { currencySymbols } from "../ProjectForm";
 import SortSelector from "./SortSelector";
 import { Check, Loader2 } from "lucide-react";
@@ -33,7 +33,7 @@ type BidSortOption = "rating" | "budget" | "deadline" | "recency";
  */
 interface BidsSectionProps {
   project: Project;
-  sortedBids: any[];
+  sortedBids: Bid[];
   bidSortOption: BidSortOption;
   setBidSortOption: (option: BidSortOption) => void;
   setToRefresh?: React.Dispatch<React.SetStateAction<boolean>>;

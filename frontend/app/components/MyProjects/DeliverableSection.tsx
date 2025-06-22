@@ -154,7 +154,7 @@ export default function DeliverableSection({
   return (
     <div className="mt-4 bg-gray-800/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700/80 shadow-lg">
       <h4 className="text-sm font-medium text-gray-400 mb-1">Deliverable</h4>
-      <p className="text-gray-500 text-sm">Awaiting seller's delivery</p>
+      <p className="text-gray-500 text-sm">Awaiting seller&apos;s delivery</p>
     </div>
   );
 }

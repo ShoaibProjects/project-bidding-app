@@ -75,7 +75,7 @@ export default function Profile() {
         const res = await getUserById(userId);
         setUserInfo(res.data);
         console.log(res.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to fetch user", err);
         setError("Could not find the requested user.");
       } finally {

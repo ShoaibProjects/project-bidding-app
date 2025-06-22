@@ -43,3 +43,5 @@
 
 #secret keys
 **/secret keys/
+
+**/dist/*

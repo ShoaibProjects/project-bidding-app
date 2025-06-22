@@ -150,7 +150,7 @@ export default function MyBidsList({ toRefresh }: { toRefresh: boolean }) {
           <Inbox className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white">No Bids Yet</h3>
           <p className="text-gray-400 mt-1">
-            You haven't placed any bids on projects. Start exploring to find
+            You haven&apos;t placed any bids on projects. Start exploring to find
             opportunities!
           </p>
         </motion.div>

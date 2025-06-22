@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, User, AlertCircle, ArrowLeft } from "lucide-react";
+import { MessageSquare, User, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 
 import ChatComponent from "../../components/ChatComponent";
 import { ConversationList } from "@/app/components/ConversationList";
@@ -31,7 +31,7 @@ interface NewConversationData {
  * - Real-time updates via WebSocket
  * - Responsive sidebar behavior
  */
-const ChatPage: React.FC = () => {
+const ChatPageContent: React.FC = () => {
   // Get current user from global state
   const { user } = useUserStore();
   const currentUserId = user?.id || "";
@@ -46,7 +46,7 @@ const ChatPage: React.FC = () => {
   // Get URL search parameters for direct conversation access
   const searchParams = useSearchParams();
   const sellerId = searchParams.get("sellerId");
-  
+
   // Ref to track previous conversation ID for socket cleanup
   const previousConversationId = useRef<string | null>(null);
 
@@ -179,7 +179,7 @@ const ChatPage: React.FC = () => {
             <ArrowLeft className="w-6 h-6 text-gray-300" />
           </button>
         </div>
-        
+       
         {/* Conversation list */}
         <div className="overflow-y-auto flex-1 pb-4">
           <ConversationList
@@ -196,17 +196,17 @@ const ChatPage: React.FC = () => {
           />
         </div>
       </motion.div>
-      
+     
       {/* Mobile sidebar backdrop (click to close) */}
       <AnimatePresence>
         {isSidebarOpen && (
            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/50 z-20"
-            />
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             onClick={() => setIsSidebarOpen(false)}
+             className="lg:hidden fixed inset-0 bg-black/50 z-20"
+           />
         )}
       </AnimatePresence>
 
@@ -217,13 +217,13 @@ const ChatPage: React.FC = () => {
           <button
             onClick={() => setIsSidebarOpen(true)}
             className="absolute top-4 left-4 p-3 rounded-full bg-purple-600 text-white shadow-lg lg:hidden z-10
-                       hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                           hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
             aria-label="Open sidebar"
           >
             <MessageSquare className="w-6 h-6" />
           </button>
         )}
-        
+       
         {/* Chat header */}
         <div className="p-4 md:p-6 border-b border-gray-700 bg-gradient-to-r from-purple-800 to-indigo-900 text-white flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3 md:gap-4">
@@ -299,5 +299,30 @@ const ChatPage: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * ChatPage component - Entry point for the chat page.
+ * Wraps the main content in a Suspense boundary to handle client-side rendering.
+ */
+const ChatPage: React.FC = () => {
+  return (
+    <Suspense fallback={<ChatPageFallback />}>
+      <ChatPageContent />
+    </Suspense>
+  );
+};
+
+/**
+ * ChatPageFallback component - A loading skeleton to show while the main component is loading.
+ */
+const ChatPageFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
+    <div className="flex flex-col items-center gap-4">
+      <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+      <p className="text-lg">Loading Chats...</p>
+    </div>
+  </div>
+);
+
 
 export default ChatPage;
