@@ -16,6 +16,7 @@ import { Conversation, Message } from "@/app/types";
 import { useUserStore } from "@/store/userStore";
 import { useSearchParams } from "next/navigation";
 import SocketService from "@/app/utils/socket";
+import { useSocket } from "../../hooks/useSocket";
 
 // Interface for new conversation data structure
 interface NewConversationData {
@@ -37,6 +38,7 @@ const ChatPageContent: React.FC = () => {
   const currentUserId = user?.id || "";
 
   // State management
+  useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
