@@ -23,11 +23,18 @@ export const signup = (data: SignupData) => API.post("/api/auth/signup", data);
 export const login = (data: LoginData) => API.post("/api/auth/login", data);
 
 /**
+ * Log in with Google using Firebase ID token
+ * @param idToken - Firebase ID token from Google authentication
+ * @returns Axios Promise for POST /api/auth/google
+ */
+export const googleLogin = (idToken: string) => 
+  API.post("/api/auth/google", { idToken });
+
+/**
  * Log out the current user
  * @returns Axios Promise for POST /api/auth/logout
  */
 export const logout = () => API.post("/api/auth/logout");
-
 
 /**
  * Get info of the currently logged-in user

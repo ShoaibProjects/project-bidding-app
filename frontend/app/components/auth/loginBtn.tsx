@@ -1,9 +1,9 @@
 "use client";
-
 import { useUserStore } from "@/store/userStore";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
+import { googleLogin } from "@/app/services/authService"; // Import the googleLogin function
 
 const GoogleLoginButton = () => {
   const router = useRouter();
@@ -15,23 +15,14 @@ const GoogleLoginButton = () => {
       const { auth, provider, signInWithPopup } = await import("../../utils/firebase");
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
-
+      
       // Get ID token from Firebase user
       const idToken = await firebaseUser.getIdToken();
-
-      // Send the token to backend
-      const res = await fetch("http://localhost:3001/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to log in via backend");
-      }
-
-      const data = await res.json();
-
+      
+      // Use the centralized API service instead of direct fetch
+      const response = await googleLogin(idToken);
+      const data = response.data;
+      
       // Set user and store token
       setUser({
         email: data.user.email,
@@ -39,9 +30,9 @@ const GoogleLoginButton = () => {
         role: data.user.role,
         name: data.user.name, // if needed
       });
-
+      
       localStorage.setItem("token", data.token);
-
+      
       // Redirect to appropriate dashboard
       router.push(`/dashboard/${data.user.role.toLowerCase()}`);
     } catch (err) {
