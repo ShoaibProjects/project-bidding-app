@@ -21,6 +21,7 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const httpServer = createServer(app);
+const PORT = process.env.PORT || 3001;
 
 // Initialize Socket.IO
 const io = initSocket(httpServer);
@@ -151,7 +152,6 @@ testDbConnection();
 // Local Development Server
 // ------------------------------------
 if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3001;
   httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log("📡 Socket.IO server ready");
